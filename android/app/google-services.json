@@ -1,0 +1,49 @@
+{
+  "project_info": {
+    "project_number": "593377918460",
+    "firebase_url": "https://velora-zh-default-rtdb.firebaseio.com",
+    "project_id": "velora-zh",
+    "storage_bucket": "velora-zh.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:593377918460:android:96681f9a6874ffe38c0679",
+        "android_client_info": {
+          "package_name": "com.example.dvelora"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA5jfuYjDc4L6JkbCRBJxB595RXEto-swQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:593377918460:android:5baf6c0a9bbe35118c0679",
+        "android_client_info": {
+          "package_name": "com.example.velora2"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA5jfuYjDc4L6JkbCRBJxB595RXEto-swQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
