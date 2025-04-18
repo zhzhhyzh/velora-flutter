@@ -12,6 +12,9 @@ void main() async {
 
 class MyApp extends StatelessWidget {
   final Future<FirebaseApp> _initialization = Firebase.initializeApp();
+  bool _iconBool = false;
+  IconData _iconLight = Icons.wb_sunny;
+  IconData _iconDark = Icons.nights_stay;
 
   @override
   Widget build(BuildContext context) {
@@ -28,7 +31,7 @@ class MyApp extends StatelessWidget {
                     color: Colors.cyan,
                     fontSize: 40,
                     fontWeight: FontWeight.bold,
-                    fontFamily: 'Signatra'
+                    fontFamily: 'Signatra',
                   ),
                 ),
               ),
@@ -53,6 +56,7 @@ class MyApp extends StatelessWidget {
         return MaterialApp(
           debugShowCheckedModeBanner: false,
           title: 'Velora',
+
           theme: ThemeData(
             scaffoldBackgroundColor: Colors.black,
             primarySwatch: Colors.blue,

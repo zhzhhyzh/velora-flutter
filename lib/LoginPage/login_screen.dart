@@ -32,7 +32,9 @@ class _LoginState extends State<Login> with TickerProviderStateMixin {
   @override
   void dispose() {
     _animationController.dispose();
-
+    _emailTextController.dispose();
+    _passTextController.dispose();
+    _passFocusNode.dispose();
     // TODO: implement dispose
     super.dispose();
   }
@@ -45,20 +47,20 @@ class _LoginState extends State<Login> with TickerProviderStateMixin {
       duration: Duration(seconds: 20),
     );
     _animation =
-        CurvedAnimation(parent: _animationController, curve: Curves.linear)
-          ..addListener(() {
-            setState(() {});
-          })
-          ..addStatusListener((animationStatus) {
-            if (animationStatus == AnimationStatus.completed) {
-              _animationController.reset();
-              _animationController.forward();
-            }
-          });
+    CurvedAnimation(parent: _animationController, curve: Curves.linear)
+      ..addListener(() {
+        setState(() {});
+      })
+      ..addStatusListener((animationStatus) {
+        if (animationStatus == AnimationStatus.completed) {
+          _animationController.reset();
+          _animationController.forward();
+        }
+      });
     _animationController.forward();
     super.initState();
   }
-
+  String? errorMessage;
   void _submitFormOnLogin() async {
     final isValid = _loginFormKey.currentState!.validate();
     if (!isValid) {
@@ -67,7 +69,7 @@ class _LoginState extends State<Login> with TickerProviderStateMixin {
       });
       try {
         await _auth.signInWithEmailAndPassword(
-          email: _emailTextController.text.trim(),
+          email: _emailTextController.text.trim().toLowerCase(),
           password: _passTextController.text.trim(),
         );
         Navigator.canPop(context) ? Navigator.pop(context) : null;
@@ -75,7 +77,15 @@ class _LoginState extends State<Login> with TickerProviderStateMixin {
         setState(() {
           _isLoading = false;
         });
-        GlobalMethod.showErrorDialog(error: error.toString(), ctx: context);
+        if (error.toString().contains('firebase_auth/channel-error')) {
+          errorMessage = "Please enter username and email.";
+        } else if (error.toString().contains('invalid-credential')) {
+          errorMessage = "Incorrect password.";
+        } else {
+          errorMessage = "Something went wrong. Please try again.";
+        }
+        GlobalMethod.showErrorDialog(error:errorMessage!,
+            ctx: context);
         print('error occurred $error');
       }
     }
@@ -114,11 +124,12 @@ class _LoginState extends State<Login> with TickerProviderStateMixin {
                         TextFormField(
                           textInputAction: TextInputAction.next,
                           onEditingComplete:
-                              () => {
-                                FocusScope.of(
-                                  context,
-                                ).requestFocus(_passFocusNode),
-                              },
+                              () =>
+                          {
+                            FocusScope.of(
+                              context,
+                            ).requestFocus(_passFocusNode),
+                          },
 
                           keyboardType: TextInputType.emailAddress,
                           controller: _emailTextController,
@@ -247,19 +258,20 @@ class _LoginState extends State<Login> with TickerProviderStateMixin {
                                     fontSize: 16,
                                   ),
                                 ),
-                               const TextSpan(text: '        '),
+                                const TextSpan(text: '        '),
                                 TextSpan(
                                   recognizer:
-                                      TapGestureRecognizer()
-                                        ..onTap =
-                                            () => Navigator.push(
-                                              context,
-                                              MaterialPageRoute(
-                                                builder: (context) => SignUp(),
-                                              ),
-                                            ),
+                                  TapGestureRecognizer()
+                                    ..onTap =
+                                        () =>
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) => SignUp(),
+                                          ),
+                                        ),
                                   text: 'Signup',
-                                  style:const TextStyle(
+                                  style: const TextStyle(
                                     color: Colors.cyan,
                                     fontWeight: FontWeight.bold,
                                     fontSize: 16,
