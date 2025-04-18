@@ -3,7 +3,6 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:velora2/ForgotPassword/forget_password_screen.dart';
 import 'package:velora2/Services/global_methods.dart';
-import 'package:velora2/Services/global_variables.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:velora2/SignupPage/signup_screen.dart';
 
@@ -47,20 +46,22 @@ class _LoginState extends State<Login> with TickerProviderStateMixin {
       duration: Duration(seconds: 20),
     );
     _animation =
-    CurvedAnimation(parent: _animationController, curve: Curves.linear)
-      ..addListener(() {
-        setState(() {});
-      })
-      ..addStatusListener((animationStatus) {
-        if (animationStatus == AnimationStatus.completed) {
-          _animationController.reset();
-          _animationController.forward();
-        }
-      });
+        CurvedAnimation(parent: _animationController, curve: Curves.linear)
+          ..addListener(() {
+            setState(() {});
+          })
+          ..addStatusListener((animationStatus) {
+            if (animationStatus == AnimationStatus.completed) {
+              _animationController.reset();
+              _animationController.forward();
+            }
+          });
     _animationController.forward();
     super.initState();
   }
+
   String? errorMessage;
+
   void _submitFormOnLogin() async {
     final isValid = _loginFormKey.currentState!.validate();
     if (!isValid) {
@@ -84,8 +85,7 @@ class _LoginState extends State<Login> with TickerProviderStateMixin {
         } else {
           errorMessage = "Something went wrong. Please try again.";
         }
-        GlobalMethod.showErrorDialog(error:errorMessage!,
-            ctx: context);
+        GlobalMethod.showErrorDialog(error: errorMessage!, ctx: context);
         print('error occurred $error');
       }
     }
@@ -114,9 +114,30 @@ class _LoginState extends State<Login> with TickerProviderStateMixin {
                 children: [
                   Padding(
                     padding: const EdgeInsets.only(left: 80, right: 80),
-                    child: Image.asset('assets/images/logo.jpg'),
+                    child: Image.asset('assets/images/logo2.png'),
                   ),
                   SizedBox(height: 15),
+                  Padding(
+                    padding: EdgeInsets.all(8.0),
+                    child: Center(
+                      child: RichText(
+                        text: TextSpan(
+
+                          children: [
+                            TextSpan(
+                              text: "WELCOME TO ",
+                              style: TextStyle(color: Colors.black, fontSize: 30),
+
+                            ),
+                            TextSpan(
+                              text: "VELORA",
+                              style: TextStyle(color: Color(0xFF689F77),  fontSize: 30),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
                   Form(
                     key: _loginFormKey,
                     child: Column(
@@ -124,12 +145,11 @@ class _LoginState extends State<Login> with TickerProviderStateMixin {
                         TextFormField(
                           textInputAction: TextInputAction.next,
                           onEditingComplete:
-                              () =>
-                          {
-                            FocusScope.of(
-                              context,
-                            ).requestFocus(_passFocusNode),
-                          },
+                              () => {
+                                FocusScope.of(
+                                  context,
+                                ).requestFocus(_passFocusNode),
+                              },
 
                           keyboardType: TextInputType.emailAddress,
                           controller: _emailTextController,
@@ -212,7 +232,7 @@ class _LoginState extends State<Login> with TickerProviderStateMixin {
                             child: Text(
                               'Forget password? ',
                               style: TextStyle(
-                                color: Colors.blue,
+                                color: Colors.red,
                                 fontSize: 17,
                                 fontStyle: FontStyle.italic,
                               ),
@@ -261,18 +281,17 @@ class _LoginState extends State<Login> with TickerProviderStateMixin {
                                 const TextSpan(text: '        '),
                                 TextSpan(
                                   recognizer:
-                                  TapGestureRecognizer()
-                                    ..onTap =
-                                        () =>
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (context) => SignUp(),
-                                          ),
-                                        ),
+                                      TapGestureRecognizer()
+                                        ..onTap =
+                                            () => Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (context) => SignUp(),
+                                              ),
+                                            ),
                                   text: 'Signup',
                                   style: const TextStyle(
-                                    color: Colors.cyan,
+                                    color: Color(0xFF0000FF),
                                     fontWeight: FontWeight.bold,
                                     fontSize: 16,
                                   ),
@@ -281,6 +300,13 @@ class _LoginState extends State<Login> with TickerProviderStateMixin {
                             ),
                           ),
                         ),
+                    const Padding(
+                      padding: EdgeInsets.only(top: 16),
+                      child: Text(
+                        'By signing in, you agree to our terms and conditions.',
+                        style: TextStyle(color: Color(0xffF9F9F9)),
+                      ),
+                    )
                       ],
                     ),
                   ),

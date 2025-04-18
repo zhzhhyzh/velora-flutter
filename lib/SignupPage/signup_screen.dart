@@ -26,15 +26,18 @@ class _SignUpState extends State<SignUp> with TickerProviderStateMixin {
   final TextEditingController _emailTextController = TextEditingController();
   final TextEditingController _passTextController = TextEditingController();
   final TextEditingController _phoneTextController = TextEditingController();
+  final TextEditingController _conPassTextController = TextEditingController();
 
   final FocusNode _emailFocusNode = FocusNode();
   final FocusNode _passFocusNode = FocusNode();
   final FocusNode _phoneNumberFocusNode = FocusNode();
+  final FocusNode _conPassFocusNode = FocusNode();
   final FocusNode _positionFocusNode = FocusNode();
 
   File? imageFile;
   final FirebaseAuth _auth = FirebaseAuth.instance;
   bool _obscureText = true;
+  bool _obscureText2 = true;
   bool _isloading = false;
   String? _selectedPosition;
   final List<String> _positions = [
@@ -204,7 +207,7 @@ class _SignUpState extends State<SignUp> with TickerProviderStateMixin {
   Widget build(BuildContext context) {
     Size size = MediaQuery.of(context).size;
     return MaterialApp(
-      // <- Ensure this is at the top level if not already
+      debugShowCheckedModeBanner: false,
       home: Scaffold(
         body: Stack(
           children: [
@@ -220,7 +223,7 @@ class _SignUpState extends State<SignUp> with TickerProviderStateMixin {
               child: Padding(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 16,
-                  vertical: 80,
+                  vertical: 20,
                 ),
                 child: ListView(
                   children: [
@@ -228,6 +231,7 @@ class _SignUpState extends State<SignUp> with TickerProviderStateMixin {
                       key: _signUpFormKey,
                       child: Column(
                         children: [
+
                           GestureDetector(
                             onTap: () {
                               _showImageDialog();
@@ -239,8 +243,8 @@ class _SignUpState extends State<SignUp> with TickerProviderStateMixin {
                                 height: size.width * 0.24,
                                 decoration: BoxDecoration(
                                   border: Border.all(
-                                    width: 1,
-                                    color: Colors.cyanAccent,
+                                    width: 2,
+                                    color: Color(0xFF689F77),
                                   ),
                                   borderRadius: BorderRadius.circular(20),
                                 ),
@@ -250,13 +254,34 @@ class _SignUpState extends State<SignUp> with TickerProviderStateMixin {
                                       imageFile == null
                                           ? const Icon(
                                             Icons.camera_enhance_sharp,
-                                            color: Colors.cyan,
+                                            color: Color(0xFF689F77),
                                             size: 30,
                                           )
                                           : Image.file(
                                             imageFile!,
                                             fit: BoxFit.fill,
                                           ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          Padding(
+                            padding: EdgeInsets.all(8.0),
+                            child: Center(
+                              child: RichText(
+                                text: TextSpan(
+
+                                  children: [
+                                    TextSpan(
+                                      text: "WELCOME TO ",
+                                      style: TextStyle(color: Colors.black, fontSize: 30),
+
+                                    ),
+                                    TextSpan(
+                                      text: "VELORA",
+                                      style: TextStyle(color: Color(0xFF689F77),  fontSize: 30),
+                                    ),
+                                  ],
                                 ),
                               ),
                             ),
@@ -328,8 +353,8 @@ class _SignUpState extends State<SignUp> with TickerProviderStateMixin {
                             textInputAction: TextInputAction.next,
                             onEditingComplete:
                                 () => FocusScope.of(
-                                  context,
-                                ).requestFocus(_phoneNumberFocusNode),
+                              context,
+                            ).requestFocus(_conPassFocusNode),
                             keyboardType: TextInputType.visiblePassword,
                             controller: _passTextController,
                             obscureText: _obscureText,
@@ -356,6 +381,55 @@ class _SignUpState extends State<SignUp> with TickerProviderStateMixin {
                                 ),
                               ),
                               hintText: 'Password',
+                              hintStyle: const TextStyle(
+                                color: Color(0xFFD9D9D9),
+                              ),
+                              enabledBorder: const UnderlineInputBorder(
+                                borderSide: BorderSide(color: Colors.white),
+                              ),
+                              focusedBorder: const UnderlineInputBorder(
+                                borderSide: BorderSide(color: Colors.white),
+                              ),
+                              errorBorder: const UnderlineInputBorder(
+                                borderSide: BorderSide(color: Colors.red),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                          TextFormField(
+                            textInputAction: TextInputAction.next,
+                            onEditingComplete:
+                                () => FocusScope.of(
+                              context,
+                            ).requestFocus(_phoneNumberFocusNode),
+                            keyboardType: TextInputType.visiblePassword,
+                            controller: _conPassTextController,
+                            obscureText: _obscureText2,
+                            validator: (value) {
+                              if (value!.isEmpty || value.length < 7) {
+                                return 'Please enter a valid password (min. 7 characters)';
+                              } else if (_passTextController.text != null && _passTextController.text != value){
+                                return 'Password not matched';
+                              }else {
+                                return null;
+                              }
+                            },
+                            style: const TextStyle(color: Colors.white),
+                            decoration: InputDecoration(
+                              suffixIcon: GestureDetector(
+                                onTap: () {
+                                  setState(() {
+                                    _obscureText2 = !_obscureText2;
+                                  });
+                                },
+                                child: Icon(
+                                  _obscureText2
+                                      ? Icons.visibility_off
+                                      : Icons.visibility,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              hintText: 'Confirmation Password',
                               hintStyle: const TextStyle(
                                 color: Color(0xFFD9D9D9),
                               ),
@@ -467,7 +541,7 @@ class _SignUpState extends State<SignUp> with TickerProviderStateMixin {
                                 onPressed: () {
                                   _submitFormOnSignUp();
                                 },
-                                color: Colors.cyan,
+                                color: Color(0xFF689F77),
                                 elevation: 8,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(13),
@@ -513,7 +587,7 @@ class _SignUpState extends State<SignUp> with TickerProviderStateMixin {
                                                       : null,
                                     text: 'Login',
                                     style: const TextStyle(
-                                      color: Colors.cyan,
+                                      color: Color(0xFF0000FF),
                                       fontWeight: FontWeight.bold,
                                       fontSize: 16,
                                     ),
