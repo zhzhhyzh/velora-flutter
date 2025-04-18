@@ -1,7 +1,7 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'LoginPage/login_screen.dart';
-import 'firebase_options.dart';
+import 'package:velora2/user_state.dart';
+ import 'firebase_options.dart';
 
 void main() async {
   //TODO - Insert initialisation of Firebase
@@ -61,7 +61,7 @@ class MyApp extends StatelessWidget {
             scaffoldBackgroundColor: Colors.black,
             primarySwatch: Colors.blue,
           ),
-          home: Login(),
+          home: UserState(),
         );
       },
     );

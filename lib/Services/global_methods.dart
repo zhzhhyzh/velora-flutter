@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 class GlobalMethod {
+
+
   static void showErrorDialog({
     required String error,
     required BuildContext ctx,
@@ -14,14 +16,12 @@ class GlobalMethod {
       builder: (context) {
         final theme = Theme.of(context);
         return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
           title: Row(
             children: [
-              Icon(
-                icon,
-                color: iconColor,
-                size: 32,
-              ),
+              Icon(icon, color: iconColor, size: 32),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
@@ -50,10 +50,7 @@ class GlobalMethod {
               },
               child: Text(
                 'OK',
-                style: TextStyle(
-                  color: iconColor,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(color: iconColor, fontWeight: FontWeight.bold),
               ),
             ),
           ],
