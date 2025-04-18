@@ -1,4 +1,5 @@
 import 'package:curved_navigation_bar/curved_navigation_bar.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:velora2/Contest/search_screen.dart';
@@ -12,6 +13,7 @@ class BottomNavBar extends StatelessWidget {
 
   BottomNavBar({required this.currentIndex});
 
+
   @override
   Widget build(BuildContext context) {
     return CurvedNavigationBar(
@@ -22,10 +24,14 @@ class BottomNavBar extends StatelessWidget {
       index: currentIndex,
       items: [
         Icon(Icons.explore, size: 19, color: Color(0xFF689f77)),
-        Icon(Icons.signal_cellular_alt_rounded, size: 19, color: Color(0xFF689f77)),
+        Icon(
+          Icons.signal_cellular_alt_rounded,
+          size: 19,
+          color: Color(0xFF689f77),
+        ),
         Icon(Icons.person_search, size: 19, color: Color(0xFF689f77)),
         Icon(Icons.work, size: 19, color: Color(0xFF689f77)),
-        Icon(Icons.face, size: 19, color: Color(0xFF689f77)),
+        Icon(Icons.person_pin, size: 19, color: Color(0xFF689f77)),
       ],
       animationDuration: Duration(milliseconds: 300),
       animationCurve: Curves.bounceInOut,
