@@ -1,14 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:velora2/InfoScreen/info_screen.dart';
 
 class TheAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String content;
   final int style;
 
-  const TheAppBar({
-    Key? key,
-    required this.content,
-    this.style = 1, // Default to style 1
-  }) : super(key: key);
+  const TheAppBar({Key? key, required this.content, this.style = 1})
+    : super(key: key);
 
   @override
   Size get preferredSize => const Size.fromHeight(kToolbarHeight);
@@ -24,11 +22,30 @@ class TheAppBar extends StatelessWidget implements PreferredSizeWidget {
           color: style == 2 ? const Color(0xFF689f77) : Colors.black,
         ),
       ),
-      centerTitle: style != 1 ? true : false,
+      centerTitle: style != 1,
+      leading:
+          style == 2 && Navigator.canPop(context)
+              ? IconButton(
+                icon: const Icon(Icons.arrow_back, color: Colors.black),
+                onPressed: () => Navigator.pop(context),
+              )
+              : null,
+      actions:
+          style == 2
+              ? [
+                IconButton(
+                  icon: const Icon(Icons.info_outline, color: Colors.black),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => InfoScreen()),
+                    );
+                  },
+                ),
+              ]
+              : [],
       flexibleSpace: Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-        ),
+        decoration: const BoxDecoration(color: Colors.white),
       ),
       backgroundColor: Colors.transparent,
       elevation: 0,
