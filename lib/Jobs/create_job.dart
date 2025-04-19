@@ -59,6 +59,9 @@ class _CreateJobState extends State<CreateJob> {
   final TextEditingController _minWorkController = TextEditingController(
     text: '',
   );
+  final TextEditingController _salaryController = TextEditingController(
+    text: '',
+  );
   final TextEditingController _finAppController = TextEditingController(
     text: '',
   );
@@ -79,7 +82,7 @@ class _CreateJobState extends State<CreateJob> {
     _minAcaController.dispose();
     _minWorkController.dispose();
     _deadlineController.dispose();
-
+    _salaryController.dispose();
     _finAppController.dispose();
   }
 
@@ -140,7 +143,7 @@ class _CreateJobState extends State<CreateJob> {
         inputFormatters: <TextInputFormatter>[
           FilteringTextInputFormatter.allow(RegExp(r'[0-9]')),
           FilteringTextInputFormatter.digitsOnly,
-          MaxValueInputFormatter(9999),
+          MaxValueInputFormatter(maxLength),
         ],
         controller: controller,
         enabled: enabled,
@@ -521,6 +524,7 @@ class _CreateJobState extends State<CreateJob> {
           'finApp': _finAppController.text,
           'deadline': _deadlineController.text,
           'deadlineTimestamp': dDateTimestamp,
+          'salary': _salaryController.text,
           'jobComments': [],
           'recruitment': true,
           'createdAt': Timestamp.now(),
@@ -543,6 +547,7 @@ class _CreateJobState extends State<CreateJob> {
         _minAcaController.clear();
         _finAppController.clear();
         _deadlineController.clear();
+        _salaryController.clear();
         imageFile = null;
         imageFile2 = null;
       } catch (e) {
@@ -798,13 +803,14 @@ class _CreateJobState extends State<CreateJob> {
                           },
                         ),
 
-                        _textTitles(label: 'Min. Work Experience:'),
+                        _textTitles(label: 'Min. Work Experience (year):'),
                         _textField(
                           valueKey: "minWork",
                           controller: _minWorkController,
                           enabled: true,
                           fct: () {},
-                          maxLength: 255,
+                          maxLength: 50,
+
                           hint: "Enter Min. Work Experience (0 for no)",
                           keyboardType: TextInputType.number,
                           inputFormatters: [
@@ -818,8 +824,23 @@ class _CreateJobState extends State<CreateJob> {
                           controller: _finAppController,
                           enabled: true,
                           fct: () {},
-                          maxLength: 255,
-                          hint: "Enter Finding Applicant",
+                          maxLength: 9999,
+
+                          hint: "Enter Min. Work Experience (0 for no)",
+                          keyboardType: TextInputType.number,
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly,
+                          ],
+                        ),
+
+                        _textTitles(label: 'Salary (month):'),
+                        _textField(
+                          valueKey: "salary",
+                          controller: _salaryController,
+                          enabled: true,
+                          fct: () {},
+                          maxLength: 1000000,
+                          hint: "Enter Salary (month)",
                           keyboardType: TextInputType.number,
                           inputFormatters: [
                             FilteringTextInputFormatter.digitsOnly,
