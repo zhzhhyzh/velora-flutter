@@ -10,8 +10,10 @@ import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:uuid/uuid.dart';
 import 'package:velora2/Services/global_methods.dart';
-import 'package:velora2/Services/global_variables.dart';
+import 'package:velora2/Services/global_dropdown.dart';
 import 'package:velora2/Widgets/the_app_bar.dart';
+
+import '../Services/global_variables.dart';
 
 class CreateJob extends StatefulWidget {
   @override
@@ -47,6 +49,9 @@ class _CreateJobState extends State<CreateJob> {
   final TextEditingController _jobTitleController = TextEditingController(
     text: '',
   );
+  final TextEditingController _comNameController = TextEditingController(
+    text: '',
+  );
   final TextEditingController _jobDescController = TextEditingController(
     text: '',
   );
@@ -68,6 +73,12 @@ class _CreateJobState extends State<CreateJob> {
   final TextEditingController _deadlineController = TextEditingController(
     text: '',
   );
+  final TextEditingController _stateController = TextEditingController(
+    text: '',
+  );
+  final TextEditingController _countryController = TextEditingController(
+    text: '',
+  );
 
   DateTime? dDate;
   Timestamp? dDateTimestamp;
@@ -84,33 +95,10 @@ class _CreateJobState extends State<CreateJob> {
     _deadlineController.dispose();
     _salaryController.dispose();
     _finAppController.dispose();
+    _comNameController.dispose();
+    _stateController.dispose;
+    _countryController.dispose;
   }
-
-  final List<String> jobCategoryList = [
-    'Architecture & Construction',
-    'Education & Training',
-    'Development - Programming',
-    'Business',
-    'Information Technology',
-    'Marketing Advertisement',
-    'Art Producer',
-  ];
-  final List<String> academicLists = [
-    'Primary School',
-    'Secondary School',
-    'College',
-    'Diploma',
-    'Bachelor',
-    'Master',
-    'Phd.',
-    'Not Required',
-  ];
-  final List<String> jobTypeList = [
-    'Permanent Role',
-    'Internship',
-    'Part Time',
-    'Freelance',
-  ];
 
   Widget _textTitles({required String label}) {
     return Padding(
@@ -504,10 +492,18 @@ class _CreateJobState extends State<CreateJob> {
       setState(() {
         _isLoading = true;
       });
-      List<int> imageBytes = await imageFile!.readAsBytes();
-      String base64Image = base64Encode(imageBytes);
-      List<int> imageBytes2 = await imageFile2!.readAsBytes();
-      String base64Image2 = base64Encode(imageBytes2);
+      String? base64Image;
+      String? base64Image2;
+
+      if (imageFile != null) {
+        final bytes = await imageFile!.readAsBytes();
+        base64Image = base64Encode(bytes);
+      }
+      if (imageFile2 != null) {
+        final bytes2 = await imageFile2!.readAsBytes();
+        base64Image2 = base64Encode(bytes2);
+      }
+
       try {
         await FirebaseFirestore.instance.collection('jobs').doc(jobId).set({
           'jobId': jobId,
@@ -515,6 +511,9 @@ class _CreateJobState extends State<CreateJob> {
           'email': user.email,
           'jobImage': base64Image,
           'arImage': base64Image2,
+          'comName': _comNameController.text,
+          'state': _stateController.text,
+          'country': _countryController.text,
           'jobTitle': _jobTitleController.text,
           'jobCat': _jobCatController.text,
           'jobType': _jobTypeController.text,
@@ -542,14 +541,19 @@ class _CreateJobState extends State<CreateJob> {
         _jobTitleController.clear();
         _jobCatController.clear();
         _jobDescController.clear();
+        _comNameController.clear();
         _jobTypeController.clear();
         _minWorkController.clear();
         _minAcaController.clear();
         _finAppController.clear();
         _deadlineController.clear();
+        _stateController.clear();
+        _countryController.clear();
         _salaryController.clear();
         imageFile = null;
         imageFile2 = null;
+        Navigator.canPop(context) ? Navigator.of(context).pop() : null;
+
       } catch (e) {
         setState(() {
           _isLoading = false;
@@ -679,11 +683,100 @@ class _CreateJobState extends State<CreateJob> {
                           maxLength: 100,
                           hint: "Enter Job Title",
                         ),
+                        _textTitles(label: 'Company Name:'),
+                        _textFormField(
+                          valueKey: "comName",
+                          controller: _comNameController,
+                          enabled: true,
+                          fct: () {},
+                          maxLength: 100,
+                          hint: "Enter Company Name",
+                        ),
+                        Row(
+                          children: [
+                            // Country Dropdown
+                            Expanded(
+                              child: DropdownButtonFormField<String>(
+                                value:
+                                    _countryController.text.isNotEmpty
+                                        ? _countryController.text
+                                        : null,
+                                decoration: _dropdownDecoration(),
+                                hint: Text(
+                                  "Select Country",
+                                  style: TextStyle(color: Color(0xFFD9D9D9)),
+                                ),
+                                items:
+                                    GlobalDD.countries.map((String country) {
+                                      return DropdownMenuItem<String>(
+                                        value: country,
+                                        child: Text(country),
+                                      );
+                                    }).toList(),
+                                dropdownColor: Colors.black87,
+                                iconEnabledColor: Colors.white,
+                                style: const TextStyle(color: Colors.white),
+                                onChanged: (String? value) {
+                                  setState(() {
+                                    _countryController.text = value!;
+                                    _stateController
+                                        .clear(); // Reset state selection
+                                  });
+                                },
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            // State Dropdown
+                            Expanded(
+                              child: _countryController.text.isEmpty
+                                  ? GestureDetector(
+                                onTap: () {
+                                  GlobalMethod.showErrorDialog(
+                                    error: "Please select country first",
+                                    ctx: context,
+                                  );
+                                },
+                                child: InputDecorator(
+                                  decoration: _dropdownDecoration(),
+                                  child: Text(
+                                    "Select State",
+                                    style: TextStyle(color: Color(0xFFD9D9D9)),
+                                  ),
+                                ),
+                              )
+                                  : DropdownButtonFormField<String>(
+                                value: _stateController.text.isNotEmpty
+                                    ? _stateController.text
+                                    : null,
+                                decoration: _dropdownDecoration(),
+                                dropdownColor: Colors.black87,
+                                iconEnabledColor: Colors.white,
+                                hint: Text("Select State", style: TextStyle(color: Color(0xFFD9D9D9))),
+                                style: const TextStyle(color: Colors.white),
+                                items: (GlobalDD.states[_countryController.text] ?? [])
+                                    .map((String state) {
+                                  return DropdownMenuItem<String>(
+                                    value: state,
+                                    child: Text(state),
+                                  );
+                                }).toList(),
+                                onChanged: (String? value) {
+                                  setState(() {
+                                    _stateController.text = value!;
+                                  });
+                                },
+                              ),
+                            )
+
+                          ],
+                        ),
 
                         _textTitles(label: "Job Category:"),
                         DropdownButtonFormField<String>(
                           value:
-                              jobCategoryList.contains(_jobCatController.text)
+                              GlobalDD.jobCategoryList.contains(
+                                    _jobCatController.text,
+                                  )
                                   ? _jobCatController.text
                                   : null,
                           hint: Text(
@@ -695,7 +788,7 @@ class _CreateJobState extends State<CreateJob> {
                           iconEnabledColor: Colors.white,
                           style: const TextStyle(color: Colors.white),
                           items:
-                              jobCategoryList.map((String category) {
+                              GlobalDD.jobCategoryList.map((String category) {
                                 return DropdownMenuItem<String>(
                                   value: category,
                                   child: Text(
@@ -721,7 +814,9 @@ class _CreateJobState extends State<CreateJob> {
                         _textTitles(label: "Job Type:"),
                         DropdownButtonFormField<String>(
                           value:
-                              jobTypeList.contains(_jobTypeController.text)
+                              GlobalDD.jobTypeList.contains(
+                                    _jobTypeController.text,
+                                  )
                                   ? _jobTypeController.text
                                   : null,
                           hint: Text(
@@ -733,7 +828,7 @@ class _CreateJobState extends State<CreateJob> {
                           iconEnabledColor: Colors.white,
                           style: const TextStyle(color: Colors.white),
                           items:
-                              jobTypeList.map((String type) {
+                              GlobalDD.jobTypeList.map((String type) {
                                 return DropdownMenuItem<String>(
                                   value: type,
                                   child: Text(
@@ -769,7 +864,9 @@ class _CreateJobState extends State<CreateJob> {
                         _textTitles(label: 'Min. Academic Level:'),
                         DropdownButtonFormField<String>(
                           value:
-                              academicLists.contains(_minAcaController.text)
+                              GlobalDD.academicLists.contains(
+                                    _minAcaController.text,
+                                  )
                                   ? _minAcaController.text
                                   : null,
                           hint: Text(
@@ -781,7 +878,7 @@ class _CreateJobState extends State<CreateJob> {
                           iconEnabledColor: Colors.white,
                           style: const TextStyle(color: Colors.white),
                           items:
-                              academicLists.map((String type) {
+                              GlobalDD.academicLists.map((String type) {
                                 return DropdownMenuItem<String>(
                                   value: type,
                                   child: Text(
@@ -826,7 +923,7 @@ class _CreateJobState extends State<CreateJob> {
                           fct: () {},
                           maxLength: 9999,
 
-                          hint: "Enter Min. Work Experience (0 for no)",
+                          hint: "Enter No. of Applicants Finding",
                           keyboardType: TextInputType.number,
                           inputFormatters: [
                             FilteringTextInputFormatter.digitsOnly,

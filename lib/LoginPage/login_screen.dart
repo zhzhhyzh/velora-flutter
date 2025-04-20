@@ -60,39 +60,45 @@ class _LoginState extends State<Login> with TickerProviderStateMixin {
     super.initState();
   }
 
-  String? errorMessage;
+  String? errorMessage = "Unexpected Error";
 
   void _submitFormOnLogin() async {
     final isValid = _loginFormKey.currentState!.validate();
-    if (!isValid) {
+    if (!isValid) return; // ← Don't proceed if the form is invalid
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      await _auth.signInWithEmailAndPassword(
+        email: _emailTextController.text.trim().toLowerCase(),
+        password: _passTextController.text.trim(),
+      );
+      Navigator.canPop(context) ? Navigator.pop(context) : null;
+    } catch (error) {
       setState(() {
-        _isLoading = true;
+        _isLoading = false;
       });
-      try {
-        await _auth.signInWithEmailAndPassword(
-          email: _emailTextController.text.trim().toLowerCase(),
-          password: _passTextController.text.trim(),
-        );
-        Navigator.canPop(context) ? Navigator.pop(context) : null;
-      } catch (error) {
-        setState(() {
-          _isLoading = false;
-        });
-        if (error.toString().contains('firebase_auth/channel-error')) {
-          errorMessage = "Please enter username and email.";
-        } else if (error.toString().contains('invalid-credential')) {
-          errorMessage = "Incorrect password.";
-        } else {
-          errorMessage = "Something went wrong. Please try again.";
-        }
-        GlobalMethod.showErrorDialog(error: errorMessage!, ctx: context);
-        print('error occurred $error');
+
+      if (error.toString().contains('firebase_auth/channel-error')) {
+        errorMessage = "Please enter username and email.";
+      } else if (error.toString().contains('firebase_auth/invalid-credential')) {
+        errorMessage = "Incorrect password.";
+      } else {
+        errorMessage = error.toString();
       }
+
+      GlobalMethod.showErrorDialog(error: errorMessage!, ctx: context);
+      print('error occurred $error');
+      return;
     }
+
     setState(() {
       _isLoading = false;
     });
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -181,7 +187,7 @@ class _LoginState extends State<Login> with TickerProviderStateMixin {
                           focusNode: _passFocusNode,
                           keyboardType: TextInputType.visiblePassword,
                           controller: _passTextController,
-                          obscureText: !_obscureText,
+                          obscureText: _obscureText,
                           validator: (value) {
                             if (value!.isEmpty || value.length < 7) {
                               return 'Please enter a valid password';
