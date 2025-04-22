@@ -170,12 +170,12 @@ class _AllJobsScreenState extends State<AllJobsScreen> {
     if (currentUser != null && currentUser.email == jobEmail) {
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => JobDetailPage(jobData: job)),
+        MaterialPageRoute(builder: (context) => JobDetailScreen(job: job)),
       );
     } else {
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => JobDetailPage(jobData: job)),
+        MaterialPageRoute(builder: (context) => JobDetailScreen(job: job)),
       );
     }
   }

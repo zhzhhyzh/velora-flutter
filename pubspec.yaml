@@ -48,6 +48,10 @@ dependencies:
   cached_network_image: ^3.4.1
   custom_navigation_bar: ^0.8.2
   curved_navigation_bar: ^1.0.6
+  flutter_localizations:
+    sdk: flutter
+  intl: any
+  file_selector: ^1.0.3
 
 dev_dependencies:
   flutter_test:
