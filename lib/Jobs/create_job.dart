@@ -14,8 +14,20 @@ import 'package:velora2/Services/global_dropdown.dart';
 import 'package:velora2/Widgets/the_app_bar.dart';
 
 import '../Services/global_variables.dart';
+import 'package:path_provider/path_provider.dart';
 
+Future<File> _convertBase64ToFile(String base64Str, String fileName) async {
+  final bytes = base64Decode(base64Str);
+  final dir = await getTemporaryDirectory();
+  final file = File('${dir.path}/$fileName');
+  await file.writeAsBytes(bytes);
+  return file;
+}
 class CreateJob extends StatefulWidget {
+  final DocumentSnapshot? jobData;
+
+  const CreateJob({Key? key, this.jobData}) : super(key: key);
+
   @override
   State<CreateJob> createState() => _CreateJobState();
 }
@@ -41,6 +53,7 @@ class MaxValueInputFormatter extends TextInputFormatter {
 }
 
 class _CreateJobState extends State<CreateJob> {
+  String buttonText = 'Post Now';
   bool _isLoading = false;
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _jobCatController = TextEditingController(
@@ -79,9 +92,49 @@ class _CreateJobState extends State<CreateJob> {
   final TextEditingController _countryController = TextEditingController(
     text: '',
   );
-
+  File? imageFile;
+  File? imageFile2;
   DateTime? dDate;
   Timestamp? dDateTimestamp;
+  @override
+  void initState() {
+    super.initState();
+    if (widget.jobData != null) {
+      final data = widget.jobData!.data() as Map<String, dynamic>;
+      _jobTitleController.text = data['jobTitle'] ?? '';
+      _comNameController.text = data['comName'] ?? '';
+      _jobDescController.text = data['jobDesc'] ?? '';
+      _jobCatController.text = data['jobCat'] ?? '';
+      _jobTypeController.text = data['jobType'] ?? '';
+      _minAcaController.text = data['minAca'] ?? '';
+      _minWorkController.text = data['minWork'] ?? '';
+      _salaryController.text = data['salary'] ?? '';
+      _finAppController.text = data['finApp'] ?? '';
+      _deadlineController.text = data['deadline'] ?? '';
+      _stateController.text = data['state'] ?? '';
+      _countryController.text = data['country'] ?? '';
+      dDateTimestamp = data['deadlineTimestamp'];
+      buttonText = widget.jobData != null ? "Save It" : "Post Now";
+      if (data['jobImage'] != null) {
+        _convertBase64ToFile(data['jobImage'], 'job_image.png').then((file) {
+          setState(() {
+            imageFile = file;
+          });
+        });
+      }
+      if (data['arImage'] != null) {
+        _convertBase64ToFile(data['arImage'], 'ar_image.png').then((file) {
+          setState(() {
+            imageFile2 = file;
+          });
+        });
+      }
+
+
+    }
+  }
+
+
 
   @override
   void dispose() {
@@ -279,8 +332,7 @@ class _CreateJobState extends State<CreateJob> {
     );
   }
 
-  File? imageFile;
-  File? imageFile2;
+
 
   void _showImageDialog() {
     showDialog(
@@ -448,50 +500,19 @@ class _CreateJobState extends State<CreateJob> {
   }
 
   void _onSubmit() async {
-    final jobId = const Uuid().v4();
-    User? user = FirebaseAuth.instance.currentUser;
-    final _uid = user!.uid;
-
     final isValid = _formKey.currentState!.validate();
-    if (isValid) {
-      if (_jobCatController == '') {
-        GlobalMethod.showErrorDialog(
-          error: "Please Select Job Category",
-          ctx: context,
-        );
-        return;
-      }
-      if (_jobTypeController == '') {
-        GlobalMethod.showErrorDialog(
-          error: "Please Select Job Type",
-          ctx: context,
-        );
-        return;
-      }
-      if (_minAcaController == '') {
-        GlobalMethod.showErrorDialog(
-          error: "Please Select Min. Academic Level",
-          ctx: context,
-        );
-        return;
-      }
-      if (_deadlineController == '') {
-        GlobalMethod.showErrorDialog(
-          error: "Please Select Application Deadline",
-          ctx: context,
-        );
-        return;
-      }
-      if (imageFile == null) {
-        GlobalMethod.showErrorDialog(
-          error: "Please Select Logo File",
-          ctx: context,
-        );
-        return;
-      }
-      setState(() {
-        _isLoading = true;
-      });
+    if (!isValid) return;
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser == null) throw Exception('User not logged in');
+
+      final jobId = widget.jobData != null ? widget.jobData!.id : Uuid().v4();
+      final jobRef = FirebaseFirestore.instance.collection('jobs').doc(jobId);
       String? base64Image;
       String? base64Image2;
 
@@ -503,69 +524,44 @@ class _CreateJobState extends State<CreateJob> {
         final bytes2 = await imageFile2!.readAsBytes();
         base64Image2 = base64Encode(bytes2);
       }
+      final jobData = {
+        'jobId': jobId,
+        'uploadedBy': currentUser.uid,
+        'email': currentUser.email,
+        'jobImage': base64Image,
+        'arImage': base64Image2,
+        'jobTitle': _jobTitleController.text,
+        'comName': _comNameController.text,
+        'jobDesc': _jobDescController.text,
+        'jobCat': _jobCatController.text,
+        'jobType': _jobTypeController.text,
+        'minAca': _minAcaController.text,
+        'minWork': _minWorkController.text,
+        'salary': _salaryController.text,
+        'finApp': _finAppController.text,
+        'deadline': _deadlineController.text,
+        'deadlineTimestamp': dDateTimestamp,
+        'state': _stateController.text,
+        'country': _countryController.text,
+        'updatedAt': Timestamp.now(),
+      };
 
-      try {
-        await FirebaseFirestore.instance.collection('jobs').doc(jobId).set({
-          'jobId': jobId,
-          'uploadedBy': _uid,
-          'email': user.email,
-          'jobImage': base64Image,
-          'arImage': base64Image2,
-          'comName': _comNameController.text,
-          'state': _stateController.text,
-          'country': _countryController.text,
-          'jobTitle': _jobTitleController.text,
-          'jobCat': _jobCatController.text,
-          'jobType': _jobTypeController.text,
-          'jobDesc': _jobDescController.text,
-          'minAca': _minAcaController.text,
-          'minWork': _minWorkController.text,
-          'finApp': _finAppController.text,
-          'deadline': _deadlineController.text,
-          'deadlineTimestamp': dDateTimestamp,
-          'salary': _salaryController.text,
-          'jobComments': [],
-          'recruitment': true,
-          'createdAt': Timestamp.now(),
-          'name': name,
-          'userImage': userImage,
-          'location': location,
-          'applicants': 0,
-        });
-        await Fluttertoast.showToast(
-          msg: 'The task has been uploaded',
-          toastLength: Toast.LENGTH_LONG,
-          backgroundColor: Colors.grey,
-          fontSize: 18.0,
-        );
-        _jobTitleController.clear();
-        _jobCatController.clear();
-        _jobDescController.clear();
-        _comNameController.clear();
-        _jobTypeController.clear();
-        _minWorkController.clear();
-        _minAcaController.clear();
-        _finAppController.clear();
-        _deadlineController.clear();
-        _stateController.clear();
-        _countryController.clear();
-        _salaryController.clear();
-        imageFile = null;
-        imageFile2 = null;
-        Navigator.canPop(context) ? Navigator.of(context).pop() : null;
-
-      } catch (e) {
-        setState(() {
-          _isLoading = false;
-        });
-        GlobalMethod.showErrorDialog(error: e.toString(), ctx: context);
-      } finally {
-        setState(() {
-          _isLoading = false;
-        });
+      if (widget.jobData != null) {
+        await jobRef.update(jobData);
+        Fluttertoast.showToast(msg: 'Job updated successfully');
+      } else {
+        jobData['createdAt'] = Timestamp.now();
+        await jobRef.set(jobData);
+        Fluttertoast.showToast(msg: 'Job created successfully');
       }
-    } else {
-      print('Its not valid');
+
+      Navigator.pop(context);
+    } catch (e) {
+      GlobalMethod.showErrorDialog(error: e.toString(), ctx: context);
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
 
@@ -728,46 +724,63 @@ class _CreateJobState extends State<CreateJob> {
                             const SizedBox(width: 10),
                             // State Dropdown
                             Expanded(
-                              child: _countryController.text.isEmpty
-                                  ? GestureDetector(
-                                onTap: () {
-                                  GlobalMethod.showErrorDialog(
-                                    error: "Please select country first",
-                                    ctx: context,
-                                  );
-                                },
-                                child: InputDecorator(
-                                  decoration: _dropdownDecoration(),
-                                  child: Text(
-                                    "Select State",
-                                    style: TextStyle(color: Color(0xFFD9D9D9)),
-                                  ),
-                                ),
-                              )
-                                  : DropdownButtonFormField<String>(
-                                value: _stateController.text.isNotEmpty
-                                    ? _stateController.text
-                                    : null,
-                                decoration: _dropdownDecoration(),
-                                dropdownColor: Colors.black87,
-                                iconEnabledColor: Colors.white,
-                                hint: Text("Select State", style: TextStyle(color: Color(0xFFD9D9D9))),
-                                style: const TextStyle(color: Colors.white),
-                                items: (GlobalDD.states[_countryController.text] ?? [])
-                                    .map((String state) {
-                                  return DropdownMenuItem<String>(
-                                    value: state,
-                                    child: Text(state),
-                                  );
-                                }).toList(),
-                                onChanged: (String? value) {
-                                  setState(() {
-                                    _stateController.text = value!;
-                                  });
-                                },
-                              ),
-                            )
-
+                              child:
+                                  _countryController.text.isEmpty
+                                      ? GestureDetector(
+                                        onTap: () {
+                                          GlobalMethod.showErrorDialog(
+                                            error:
+                                                "Please select country first",
+                                            ctx: context,
+                                          );
+                                        },
+                                        child: InputDecorator(
+                                          decoration: _dropdownDecoration(),
+                                          child: Text(
+                                            "Select State",
+                                            style: TextStyle(
+                                              color: Color(0xFFD9D9D9),
+                                            ),
+                                          ),
+                                        ),
+                                      )
+                                      : DropdownButtonFormField<String>(
+                                        value:
+                                            _stateController.text.isNotEmpty
+                                                ? _stateController.text
+                                                : null,
+                                        decoration: _dropdownDecoration(),
+                                        dropdownColor: Colors.black87,
+                                        iconEnabledColor: Colors.white,
+                                        hint: Text(
+                                          "Select State",
+                                          style: TextStyle(
+                                            color: Color(0xFFD9D9D9),
+                                          ),
+                                        ),
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                        ),
+                                        items:
+                                            (GlobalDD.states[_countryController
+                                                        .text] ??
+                                                    [])
+                                                .map((String state) {
+                                                  return DropdownMenuItem<
+                                                    String
+                                                  >(
+                                                    value: state,
+                                                    child: Text(state),
+                                                  );
+                                                })
+                                                .toList(),
+                                        onChanged: (String? value) {
+                                          setState(() {
+                                            _stateController.text = value!;
+                                          });
+                                        },
+                                      ),
+                            ),
                           ],
                         ),
 
@@ -968,7 +981,7 @@ class _CreateJobState extends State<CreateJob> {
                               onPressed: () {
                                 _onSubmit();
                               },
-                              color: Colors.black,
+                              color: Color(0xff689f77),
                               elevation: 8,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(13),
@@ -981,7 +994,7 @@ class _CreateJobState extends State<CreateJob> {
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     Text(
-                                      'Post Now',
+                                      buttonText,
                                       style: TextStyle(
                                         color: Colors.white,
                                         fontWeight: FontWeight.bold,

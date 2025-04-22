@@ -1,12 +1,12 @@
 import 'dart:convert';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:velora2/Jobs/create_job.dart';
 import 'package:velora2/Services/global_dropdown.dart';
-
 import '../Widgets/bottom_nav_bar.dart';
 import '../Widgets/the_app_bar.dart';
+import 'detail_page.dart';
 
 class AllJobsScreen extends StatefulWidget {
   const AllJobsScreen({super.key});
@@ -20,6 +20,9 @@ class _AllJobsScreenState extends State<AllJobsScreen> {
   String? jobTypeFilter;
   String? minAcaFilter;
   String _searchQuery = '';
+  String selectedTab = 'Explore';
+
+  final user = FirebaseAuth.instance.currentUser;
 
   int _activeFilterCount() {
     int count = 0;
@@ -52,18 +55,14 @@ class _AllJobsScreenState extends State<AllJobsScreen> {
       builder: (context) {
         return AlertDialog(
           backgroundColor: Colors.white,
-
           title: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Row(
-                children: [
-                  const Icon(Icons.filter_list_rounded, color: Colors.black),
-                  const SizedBox(width: 8),
-                  const Text(
-                    'Filter Jobs',
-                    style: TextStyle(color: Colors.black),
-                  ),
+                children: const [
+                  Icon(Icons.filter_list_rounded, color: Colors.black),
+                  SizedBox(width: 8),
+                  Text('Filter Jobs', style: TextStyle(color: Colors.black)),
                 ],
               ),
               IconButton(
@@ -74,7 +73,6 @@ class _AllJobsScreenState extends State<AllJobsScreen> {
           ),
           content: SingleChildScrollView(
             child: Column(
-              mainAxisSize: MainAxisSize.min,
               children: [
                 _buildDropdown(
                   label: 'Job Category',
@@ -116,15 +114,8 @@ class _AllJobsScreenState extends State<AllJobsScreen> {
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF689f77),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 10,
-                ),
               ),
-              child: const Text(
-                'Apply',
-                style: TextStyle(fontSize: 16, color: Colors.white),
-              ),
+              child: const Text('Apply', style: TextStyle(color: Colors.white)),
             ),
           ],
         );
@@ -143,26 +134,54 @@ class _AllJobsScreenState extends State<AllJobsScreen> {
       child: DropdownButtonFormField<String>(
         isExpanded: true,
         value: items.contains(value) ? value : null,
-        hint: Text(
-          "Select Job Type",
-          style: TextStyle(color: Color(0xFFD9D9D9)),
-        ),
+        hint: Text("Select $label", style: TextStyle(color: Color(0xFFD9D9D9))),
         decoration: _dropdownDecoration(),
         dropdownColor: Colors.black87,
         iconEnabledColor: Colors.white,
         style: const TextStyle(color: Colors.white),
         items:
-            items.map((item) {
-              return DropdownMenuItem(value: item, child: Text(item));
-            }).toList(),
+            items
+                .map((item) => DropdownMenuItem(value: item, child: Text(item)))
+                .toList(),
         onChanged: onChanged,
       ),
     );
   }
 
+  Stream<QuerySnapshot> _getStream() {
+    if (selectedTab == 'Applied') {
+      return FirebaseFirestore.instance
+          .collection('userjobs')
+          .where('email', isEqualTo: user?.email)
+          .snapshots();
+    } else if (selectedTab == 'Posted') {
+      return FirebaseFirestore.instance
+          .collection('jobs')
+          .where('email', isEqualTo: user?.email)
+          .snapshots();
+    }
+    return FirebaseFirestore.instance.collection('jobs').snapshots();
+  }
+
+  void _onJobTap(DocumentSnapshot job) {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    final jobEmail = job['email'];
+
+    if (currentUser != null && currentUser.email == jobEmail) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => JobDetailPage(jobData: job)),
+      );
+    } else {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => JobDetailPage(jobData: job)),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    Size size = MediaQuery.of(context).size;
     return Scaffold(
       bottomNavigationBar: BottomNavBar(currentIndex: 3),
       backgroundColor: Colors.white,
@@ -170,7 +189,7 @@ class _AllJobsScreenState extends State<AllJobsScreen> {
       body: Center(
         child: Column(
           children: [
-            // 🔍 Search bar with filter
+            // 🔍 Search Bar with filter
             Padding(
               padding: const EdgeInsets.all(8.0),
               child: TextField(
@@ -204,31 +223,56 @@ class _AllJobsScreenState extends State<AllJobsScreen> {
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 10,
-                                fontWeight: FontWeight.bold,
                               ),
                             ),
                           ),
                         ),
                     ],
                   ),
-                  contentPadding: const EdgeInsets.symmetric(vertical: 12),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide.none,
                   ),
                 ),
-                onChanged: (value) {
-                  setState(() {
-                    _searchQuery =
-                        value
-                            .toLowerCase(); // lowercase for case-insensitive match
-                  });
-                },
+                onChanged:
+                    (value) =>
+                        setState(() => _searchQuery = value.toLowerCase()),
               ),
             ),
 
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children:
+                    ['Applied', 'Explore', 'Posted'].map((tab) {
+                      final isSelected = selectedTab == tab;
+                      return Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          child: ElevatedButton(
+                            onPressed: () => setState(() => selectedTab = tab),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor:
+                                  isSelected ? Color(0xff689f77) : Colors.grey,
+                            ),
+                            child: Text(
+                              tab,
+                              style: const TextStyle(color: Colors.white),
+                            ),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+              ),
+            ),
+
+            // 🧾 Header
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 8.0,
+                vertical: 8.0,
+              ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -237,26 +281,19 @@ class _AllJobsScreenState extends State<AllJobsScreen> {
                     style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
                   ),
                   ElevatedButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => CreateJob()),
-                      );
-                    },
-                    style: ButtonStyle(
-                      backgroundColor: MaterialStateProperty.all(
-                        const Color(0xFF689f77),
-                      ),
-                      padding: MaterialStateProperty.all(
-                        const EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical: 12,
+                    onPressed:
+                        () => Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => CreateJob()),
                         ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF689f77),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 12,
                       ),
-                      shape: MaterialStateProperty.all(
-                        RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
                       ),
                     ),
                     child: const Text(
@@ -271,33 +308,23 @@ class _AllJobsScreenState extends State<AllJobsScreen> {
               ),
             ),
 
-            const SizedBox(height: 10),
-
             Expanded(
               child: StreamBuilder<QuerySnapshot>(
-                stream:
-                    FirebaseFirestore.instance.collection('jobs').snapshots(),
+                stream: _getStream(),
                 builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
+                  if (snapshot.connectionState == ConnectionState.waiting)
                     return const Center(child: CircularProgressIndicator());
-                  }
-
-                  if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                  if (!snapshot.hasData || snapshot.data!.docs.isEmpty)
                     return const Center(child: Text("No jobs found."));
-                  }
 
-                  final allJobs = snapshot.data!.docs;
-
-                  final jobs =
-                      allJobs.where((job) {
-                        final data = job.data() as Map<String, dynamic>;
-
+                  final filteredJobs =
+                      snapshot.data!.docs.where((doc) {
+                        final data = doc.data() as Map<String, dynamic>;
                         final title =
                             (data['jobTitle'] ?? '').toString().toLowerCase();
                         final category = (data['jobCat'] ?? '').toString();
                         final type = (data['jobType'] ?? '').toString();
                         final aca = (data['minAca'] ?? '').toString();
-
                         final matchesSearch =
                             _searchQuery.isEmpty ||
                             title.contains(_searchQuery);
@@ -307,7 +334,6 @@ class _AllJobsScreenState extends State<AllJobsScreen> {
                             jobTypeFilter == null || jobTypeFilter == type;
                         final matchesAca =
                             minAcaFilter == null || minAcaFilter == aca;
-
                         return matchesSearch &&
                             matchesCategory &&
                             matchesType &&
@@ -315,120 +341,119 @@ class _AllJobsScreenState extends State<AllJobsScreen> {
                       }).toList();
 
                   return ListView.builder(
-                    itemCount: jobs.length,
+                    itemCount: filteredJobs.length,
                     itemBuilder: (context, index) {
-                      final job = jobs[index];
+                      final job = filteredJobs[index];
                       final data = job.data() as Map<String, dynamic>;
-
                       return Padding(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 12,
                           vertical: 6,
                         ),
-                        child: Container(
-                          decoration: BoxDecoration(
-                            border: Border.all(color: Colors.black),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Row(
-                            children: [
-                              Container(
-                                width: 60,
-                                height: 60,
-                                margin: const EdgeInsets.all(10),
-                                decoration: BoxDecoration(
-                                  color: Colors.orange.shade700,
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(8),
-                                  child:
-                                      data['jobImage'] != null
-                                          ? Image.memory(
-                                            base64Decode(data['jobImage']),
-                                            fit: BoxFit.cover,
-                                            errorBuilder: (
-                                              context,
-                                              error,
-                                              stackTrace,
-                                            ) {
-                                              return const Icon(
-                                                Icons.image_not_supported,
-                                                color: Colors.grey,
-                                              );
-                                            },
-                                          )
-                                          : const Icon(
-                                            Icons.image,
-                                            color: Colors.grey,
-                                          ),
-                                ),
-                              ),
+                        child: InkWell(
+                          onTap: () {
+                            _onJobTap(job);
+                          },
 
-                              Expanded(
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 10,
+                          child: Container(
+                            decoration: BoxDecoration(
+                              border: Border.all(color: Colors.black),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 60,
+                                  height: 60,
+                                  margin: const EdgeInsets.all(10),
+                                  decoration: BoxDecoration(
+                                    color: Colors.orange.shade700,
+                                    borderRadius: BorderRadius.circular(8),
                                   ),
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(8),
+                                    child:
+                                        data['jobImage'] != null
+                                            ? Image.memory(
+                                              base64Decode(data['jobImage']),
+                                              fit: BoxFit.cover,
+                                              errorBuilder:
+                                                  (_, __, ___) => const Icon(
+                                                    Icons.image_not_supported,
+                                                    color: Colors.grey,
+                                                  ),
+                                            )
+                                            : const Icon(
+                                              Icons.image,
+                                              color: Colors.grey,
+                                            ),
+                                  ),
+                                ),
+                                Expanded(
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 10,
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          (data['comName'] ?? 'COMPANY NAME')
+                                              .toUpperCase(),
+                                          style: const TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.black54,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          data['jobTitle'] ?? 'Job Title',
+                                          style: const TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                                Padding(
+                                  padding: const EdgeInsets.only(right: 10),
                                   child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
+                                    crossAxisAlignment: CrossAxisAlignment.end,
                                     children: [
+                                      Row(
+                                        children: [
+                                          const Icon(
+                                            Icons.location_on,
+                                            size: 18,
+                                            color: Colors.black,
+                                          ),
+                                          const SizedBox(width: 4),
+                                          Text(
+                                            data['jobLocation'] ??
+                                                'Job Location',
+                                            style: const TextStyle(
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
                                       Text(
-                                        (data['comName'] ?? 'COMPANY NAME')
-                                            .toUpperCase(),
+                                        data['jobCat'] ?? 'Job Category',
                                         style: const TextStyle(
                                           fontSize: 12,
-                                          color: Colors.black54,
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        data['jobTitle'] ?? 'Job Title',
-                                        style: const TextStyle(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.bold,
+                                          fontWeight: FontWeight.w600,
                                         ),
                                       ),
                                     ],
                                   ),
                                 ),
-                              ),
-
-                              Padding(
-                                padding: const EdgeInsets.only(right: 10),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.end,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        Icon(
-                                          Icons.location_on,
-                                          size: 18,
-                                          color: Colors.black,
-                                        ),
-                                        SizedBox(width: 4),
-                                        Text(
-                                          data['jobLocation'] ?? 'Job Location',
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    Text(
-                                      data['jobCat'] ?? 'Job Category',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ),
                       );
