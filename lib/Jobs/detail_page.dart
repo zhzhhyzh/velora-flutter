@@ -5,8 +5,10 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:velora2/Jobs/apply_job.dart';
 import '../Jobs/create_job.dart';
+import '../Services/ar_view_screen.dart';
 import '../Services/global_methods.dart';
 import '../Widgets/the_app_bar.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class JobDetailScreen extends StatefulWidget {
   final DocumentSnapshot job;
@@ -25,17 +27,33 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
   void initState() {
     super.initState();
     data = widget.job.data() as Map<String, dynamic>;
+  }
 
+  Future<void> _checkPermissionsAndLaunchAR(BuildContext context) async {
+    final cameraStatus = await Permission.camera.request();
+
+    if (cameraStatus.isGranted) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const ARViewScreen()),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Camera permission is required for AR')),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final isOwner = user?.email == data['email'];
 
-    final deadlineDate = (data['deadline'] is Timestamp)
-        ? (data['deadline'] as Timestamp).toDate()
-        : DateTime.tryParse(data['deadline'] ?? '');
-    final isExpired = deadlineDate != null && DateTime.now().isAfter(deadlineDate);
+    final deadlineDate =
+        (data['deadline'] is Timestamp)
+            ? (data['deadline'] as Timestamp).toDate()
+            : DateTime.tryParse(data['deadline'] ?? '');
+    final isExpired =
+        deadlineDate != null && DateTime.now().isAfter(deadlineDate);
 
     return Scaffold(
       appBar: TheAppBar(content: data['comName'] ?? 'Job Detail', style: 2),
@@ -55,19 +73,20 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                     borderRadius: BorderRadius.circular(12),
                     color: Colors.grey.shade200,
                   ),
-                  child: data['jobImage'] != null
-                      ? ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: Image.memory(
-                      base64Decode(data['jobImage']),
-                      fit: BoxFit.cover,
-                    ),
-                  )
-                      : const Icon(
-                    Icons.image,
-                    size: 40,
-                    color: Colors.grey,
-                  ),
+                  child:
+                      data['jobImage'] != null
+                          ? ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: Image.memory(
+                              base64Decode(data['jobImage']),
+                              fit: BoxFit.cover,
+                            ),
+                          )
+                          : const Icon(
+                            Icons.image,
+                            size: 40,
+                            color: Colors.grey,
+                          ),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
@@ -100,17 +119,15 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                                 ),
                                 Padding(
                                   padding: const EdgeInsets.only(left: 19.0),
-                                  child:
-                                  Text(data['jobLocation'] ?? 'REMOTE'),
-                                )
+                                  child: Text(data['jobLocation'] ?? 'REMOTE'),
+                                ),
                               ],
                             ),
                           ),
                           IconButton(
                             icon: const Icon(Icons.view_in_ar),
-                            onPressed: () {
-                              // AR view or extra feature
-                            },
+                            onPressed:
+                                () => _checkPermissionsAndLaunchAR(context),
                           ),
                         ],
                       ),
@@ -164,7 +181,8 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
               content: GlobalMethod.formatDateWithSuperscript(
                 (data['deadlineTimestamp'] is Timestamp)
                     ? (data['deadlineTimestamp'] as Timestamp).toDate()
-                    : DateTime.tryParse(data['deadlineTimestamp'] ?? '') ?? DateTime.now(),
+                    : DateTime.tryParse(data['deadlineTimestamp'] ?? '') ??
+                        DateTime.now(),
               ),
 
               labelColor: Colors.green,
@@ -174,56 +192,60 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
         ),
       ),
 
-    floatingActionButton: isOwner
-        ? Row(
-      mainAxisAlignment: MainAxisAlignment.end,
-      children: [
-        FloatingActionButton(
-          heroTag: 'edit',
-          backgroundColor: const Color(0xff689f77),
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => CreateJob(jobData: widget.job),
-              ),
-            );
-          },
-          child: const Icon(Icons.edit, color: Colors.white),
-        ),
-        const SizedBox(width: 16),
-        FloatingActionButton(
-          heroTag: 'delete',
-          backgroundColor: Colors.red,
-          onPressed: () async {
-            await FirebaseFirestore.instance
-                .collection('jobs')
-                .doc(widget.job.id)
-                .delete();
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Deleted successfully!')),
-            );
-            Navigator.pop(context);
-
-          },
-          child: const Icon(Icons.remove_circle, color: Colors.white),
-        ),
-      ],
-    )
-        : (!isExpired
-        ? FloatingActionButton.extended(
-      onPressed: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => ApplyJobScreen(job: widget.job)),
-        );
-      },
-      label: const Text("APPLY", style: TextStyle(color: Colors.white)),
-      icon: const Icon(Icons.send, color: Colors.white),
-      backgroundColor: const Color(0xFF689f77),
-    )
-        : null),
-
+      floatingActionButton:
+          isOwner
+              ? Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  FloatingActionButton(
+                    heroTag: 'edit',
+                    backgroundColor: const Color(0xff689f77),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => CreateJob(jobData: widget.job),
+                        ),
+                      );
+                    },
+                    child: const Icon(Icons.edit, color: Colors.white),
+                  ),
+                  const SizedBox(width: 16),
+                  FloatingActionButton(
+                    heroTag: 'delete',
+                    backgroundColor: Colors.red,
+                    onPressed: () async {
+                      await FirebaseFirestore.instance
+                          .collection('jobs')
+                          .doc(widget.job.id)
+                          .delete();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Deleted successfully!')),
+                      );
+                      Navigator.pop(context);
+                    },
+                    child: const Icon(Icons.remove_circle, color: Colors.white),
+                  ),
+                ],
+              )
+              : (!isExpired
+                  ? FloatingActionButton.extended(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => ApplyJobScreen(job: widget.job),
+                        ),
+                      );
+                    },
+                    label: const Text(
+                      "APPLY",
+                      style: TextStyle(color: Colors.white),
+                    ),
+                    icon: const Icon(Icons.send, color: Colors.white),
+                    backgroundColor: const Color(0xFF689f77),
+                  )
+                  : null),
     );
   }
 
@@ -248,8 +270,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
           children: [
             TextSpan(
               text: '$label ',
-              style:
-              TextStyle(fontWeight: FontWeight.bold, color: labelColor),
+              style: TextStyle(fontWeight: FontWeight.bold, color: labelColor),
             ),
             TextSpan(
               text: content,

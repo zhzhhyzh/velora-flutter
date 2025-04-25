@@ -1,5 +1,6 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:velora2/config/theme.dart';
 import 'package:velora2/user_state.dart';
  import 'firebase_options.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -13,6 +14,7 @@ Future<void> main() async {
 }
 
 class MyApp extends StatelessWidget {
+
   final Future<FirebaseApp> _initialization = Firebase.initializeApp();
   bool _iconBool = false;
   IconData _iconLight = Icons.wb_sunny;
@@ -62,6 +64,7 @@ class MyApp extends StatelessWidget {
           theme: ThemeData(
             scaffoldBackgroundColor: Colors.black,
             primarySwatch: Colors.blue,
+
           ),
           home: UserState(),
         );
