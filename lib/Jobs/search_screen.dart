@@ -152,7 +152,7 @@ class _AllJobsScreenState extends State<AllJobsScreen> {
     if (selectedTab == 'Applied') {
       return FirebaseFirestore.instance
           .collection('userjobs')
-          .where('email', isEqualTo: user?.email)
+          .where('userEmail', isEqualTo: user?.email)
           .snapshots();
     } else if (selectedTab == 'Posted') {
       return FirebaseFirestore.instance
@@ -178,6 +178,195 @@ class _AllJobsScreenState extends State<AllJobsScreen> {
         MaterialPageRoute(builder: (context) => JobDetailScreen(job: job)),
       );
     }
+  }
+  Widget _buildJobTile(Map<String, dynamic> data, DocumentSnapshot doc) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      child: InkWell(
+        onTap: () => _onJobTap(doc),
+        child: Container(
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.black),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 60,
+                height: 60,
+                margin: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.orange.shade700,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: data['jobImage'] != null
+                      ? Image.memory(
+                    base64Decode(data['jobImage']),
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) =>
+                    const Icon(Icons.image_not_supported),
+                  )
+                      : const Icon(Icons.image, color: Colors.grey),
+                ),
+              ),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        (data['comName'] ?? 'COMPANY NAME').toUpperCase(),
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Colors.black54,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        data['jobTitle'] ?? 'Job Title',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(right: 10),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.location_on, size: 18, color: Colors.black),
+                        const SizedBox(width: 4),
+                        Text(
+                          data['jobLocation'] ?? 'Job Location',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Text(
+                      data['jobCat'] ?? 'Job Category',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+  Widget _buildJobCard(Map<String, dynamic> data, DocumentSnapshot job) {
+    final location = [
+      data['country']?.toString(),
+      data['state']?.toString()
+    ].where((e) => e != null && e.trim().isNotEmpty).join(', ');
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      child: InkWell(
+        onTap: () => _onJobTap(job),
+        child: Container(
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.black),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 60,
+                height: 60,
+                margin: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.orange.shade700,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: data['jobImage'] != null
+                      ? Image.memory(
+                    base64Decode(data['jobImage']),
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) =>
+                    const Icon(Icons.image_not_supported, color: Colors.grey),
+                  )
+                      : const Icon(Icons.image, color: Colors.grey),
+                ),
+              ),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        (data['comName'] ?? 'COMPANY NAME').toUpperCase(),
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Colors.black54,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        data['jobTitle'] ?? 'Job Title',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(right: 10),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.location_on, size: 18, color: Colors.black),
+                        const SizedBox(width: 4),
+                        Text(
+                          location.isNotEmpty ? location : 'Job Location',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Text(
+                      data['jobCat'] ?? 'Job Category',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -339,126 +528,35 @@ class _AllJobsScreenState extends State<AllJobsScreen> {
                             matchesType &&
                             matchesAca;
                       }).toList();
-
                   return ListView.builder(
                     itemCount: filteredJobs.length,
                     itemBuilder: (context, index) {
-                      final job = filteredJobs[index];
-                      final data = job.data() as Map<String, dynamic>;
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                        child: InkWell(
-                          onTap: () {
-                            _onJobTap(job);
-                          },
+                      final doc = filteredJobs[index];
 
-                          child: Container(
-                            decoration: BoxDecoration(
-                              border: Border.all(color: Colors.black),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Row(
-                              children: [
-                                Container(
-                                  width: 60,
-                                  height: 60,
-                                  margin: const EdgeInsets.all(10),
-                                  decoration: BoxDecoration(
-                                    color: Colors.orange.shade700,
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: ClipRRect(
-                                    borderRadius: BorderRadius.circular(8),
-                                    child:
-                                        data['jobImage'] != null
-                                            ? Image.memory(
-                                              base64Decode(data['jobImage']),
-                                              fit: BoxFit.cover,
-                                              errorBuilder:
-                                                  (_, __, ___) => const Icon(
-                                                    Icons.image_not_supported,
-                                                    color: Colors.grey,
-                                                  ),
-                                            )
-                                            : const Icon(
-                                              Icons.image,
-                                              color: Colors.grey,
-                                            ),
-                                  ),
-                                ),
-                                Expanded(
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 10,
-                                    ),
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          (data['comName'] ?? 'COMPANY NAME')
-                                              .toUpperCase(),
-                                          style: const TextStyle(
-                                            fontSize: 12,
-                                            color: Colors.black54,
-                                            fontWeight: FontWeight.w500,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          data['jobTitle'] ?? 'Job Title',
-                                          style: const TextStyle(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                                Padding(
-                                  padding: const EdgeInsets.only(right: 10),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.end,
-                                    children: [
-                                      Row(
-                                        children: [
-                                          const Icon(
-                                            Icons.location_on,
-                                            size: 18,
-                                            color: Colors.black,
-                                          ),
-                                          const SizedBox(width: 4),
-                                          Text(
-                                            data['jobLocation'] ??
-                                                'Job Location',
-                                            style: const TextStyle(
-                                              fontSize: 12,
-                                              fontWeight: FontWeight.w600,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      Text(
-                                        data['jobCat'] ?? 'Job Category',
-                                        style: const TextStyle(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      );
+                      // If tab is Applied, fetch job from jobs collection
+                      if (selectedTab == 'Applied') {
+                        final jobId = (doc.data() as Map<String, dynamic>)['jobId'];
+
+                        return FutureBuilder<DocumentSnapshot>(
+                          future: FirebaseFirestore.instance.collection('jobs').doc(jobId).get(),
+                          builder: (context, snapshot) {
+                            if (!snapshot.hasData || !snapshot.data!.exists) {
+                              return const SizedBox(); // or error widget
+                            }
+
+                            final jobDoc = snapshot.data!;
+                            final jobData = jobDoc.data() as Map<String, dynamic>;
+                            return _buildJobCard(jobData, jobDoc);
+                          },
+                        );
+                      } else {
+                        final data = doc.data() as Map<String, dynamic>;
+                        return _buildJobCard(data, doc);
+                      }
                     },
                   );
+
+
                 },
               ),
             ),

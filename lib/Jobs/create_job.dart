@@ -870,7 +870,7 @@ class _CreateJobState extends State<CreateJob> {
                           controller: _jobDescController,
                           enabled: true,
                           fct: () {},
-                          maxLength: 255,
+                          maxLength: 1000,
                           hint: "Enter Job Description",
                         ),
 

@@ -5,7 +5,7 @@ import 'package:file_selector/file_selector.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-
+import '../Services/email_sender.dart';
 import '../Widgets/the_app_bar.dart';
 
 class ApplyJobScreen extends StatefulWidget {
@@ -58,11 +58,12 @@ class _ApplyJobScreenState extends State<ApplyJobScreen> {
     }
   }
 
-
   Future<void> _submitApplication() async {
     if (!_formKey.currentState!.validate() || _resumeBytes == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please complete all fields and attach a PDF resume.')),
+        const SnackBar(
+          content: Text('Please complete all fields and attach a PDF resume.'),
+        ),
       );
       return;
     }
@@ -89,6 +90,31 @@ class _ApplyJobScreenState extends State<ApplyJobScreen> {
         'recruiterEmail': jobData['email'],
         'appliedAt': Timestamp.now(),
       });
+      final emailSender = EmailSender();
+
+      try {
+        await emailSender.sendEmail(
+          toEmail: jobData['email'],
+          toName: 'Recruiter',
+          subject: 'New Job Application - ${jobData['jobTitle']}',
+          htmlContent: '''
+<p>Dear Recruiter,</p>
+<p>New application for the position of ${jobData['jobTitle']} at ${jobData['comName']}.</p>
+<p><strong>Name:</strong> ${_nameController.text}<br>
+<strong>Phone:</strong> ${_phoneController.text}<br>
+<strong>Email:</strong> ${_emailController.text}<br>
+<strong>Portfolio:</strong> ${_portfolioController.text}<br>
+<strong>Message:</strong> ${_messageController.text}</p>
+<p>Regards,<br>${_nameController.text}</p>
+''',
+          attachmentName: _resumeFile!.name,
+          attachmentBase64: fileBase64,
+        );
+      } catch (e) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Could not send email: $e')));
+      }
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Application submitted successfully!')),
@@ -96,16 +122,20 @@ class _ApplyJobScreenState extends State<ApplyJobScreen> {
 
       Navigator.pop(context);
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to submit: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed to submit: $e')));
     } finally {
       setState(() => _isSubmitting = false);
     }
   }
 
-  Widget _buildField(String label, TextEditingController controller,
-      {bool required = true, TextInputType? keyboardType}) {
+  Widget _buildField(
+    String label,
+    TextEditingController controller, {
+    bool required = true,
+    TextInputType? keyboardType,
+  }) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Column(
@@ -115,12 +145,17 @@ class _ApplyJobScreenState extends State<ApplyJobScreen> {
           const SizedBox(height: 4),
           TextFormField(
             controller: controller,
-            validator: required
-                ? (value) => value == null || value.isEmpty ? 'Required' : null
-                : null,
+            validator:
+                required
+                    ? (value) =>
+                        value == null || value.isEmpty ? 'Required' : null
+                    : null,
             keyboardType: keyboardType,
             decoration: InputDecoration(
-              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 10,
+              ),
               hintText: 'Enter your ${label.toLowerCase()}',
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(18),
@@ -161,7 +196,13 @@ class _ApplyJobScreenState extends State<ApplyJobScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(jobData['jobTitle'], style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                      Text(
+                        jobData['jobTitle'],
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                       const SizedBox(height: 4),
                       Row(
                         children: [
@@ -170,10 +211,12 @@ class _ApplyJobScreenState extends State<ApplyJobScreen> {
                         ],
                       ),
                       Text('JOB TYPE: ${jobData['jobType']}'),
-                      Text('DATE POSTED: ${_formatTimestamp(jobData['createdAt'])}'),
+                      Text(
+                        'DATE POSTED: ${_formatTimestamp(jobData['createdAt'])}',
+                      ),
                     ],
                   ),
-                )
+                ),
               ],
             ),
             const Divider(height: 30, thickness: 1),
@@ -183,19 +226,38 @@ class _ApplyJobScreenState extends State<ApplyJobScreen> {
               child: Column(
                 children: [
                   _buildField('Name', _nameController),
-                  _buildField('Phone No.', _phoneController, keyboardType: TextInputType.phone),
-                  _buildField('Email', _emailController, required: true, keyboardType: TextInputType.emailAddress),
-                  _buildField('Portfolio Link', _portfolioController, required: false, keyboardType: TextInputType.url),
+                  _buildField(
+                    'Phone No.',
+                    _phoneController,
+                    keyboardType: TextInputType.phone,
+                  ),
+                  _buildField(
+                    'Email',
+                    _emailController,
+                    required: true,
+                    keyboardType: TextInputType.emailAddress,
+                  ),
+                  _buildField(
+                    'Portfolio Link',
+                    _portfolioController,
+                    required: false,
+                    keyboardType: TextInputType.url,
+                  ),
                   const SizedBox(height: 12),
                   Align(
                     alignment: Alignment.centerLeft,
-                    child: Text('Upload Resume (PDF)', style: const TextStyle(fontWeight: FontWeight.bold)),
+                    child: Text(
+                      'Upload Resume (PDF)',
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
                   ),
                   const SizedBox(height: 6),
                   OutlinedButton(
                     onPressed: _pickResume,
                     child: Text(
-                      _resumeFile != null ? 'Resume selected' : 'Choose PDF Resume',
+                      _resumeFile != null
+                          ? 'Resume selected'
+                          : 'Choose PDF Resume',
                     ),
                   ),
                   if (_resumeFile != null)
@@ -204,7 +266,11 @@ class _ApplyJobScreenState extends State<ApplyJobScreen> {
                       style: const TextStyle(fontSize: 12, color: Colors.green),
                     ),
                   const SizedBox(height: 16),
-                  _buildField('Optional Message', _messageController, required: false),
+                  _buildField(
+                    'Optional Message',
+                    _messageController,
+                    required: false,
+                  ),
                 ],
               ),
             ),
@@ -214,11 +280,17 @@ class _ApplyJobScreenState extends State<ApplyJobScreen> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF689f77),
                 minimumSize: const Size.fromHeight(50),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(30),
+                ),
               ),
-              child: _isSubmitting
-                  ? const CircularProgressIndicator(color: Colors.white)
-                  : const Text('SUBMIT', style: TextStyle(fontSize: 18, color: Colors.white)),
+              child:
+                  _isSubmitting
+                      ? const CircularProgressIndicator(color: Colors.white)
+                      : const Text(
+                        'SUBMIT',
+                        style: TextStyle(fontSize: 18, color: Colors.white),
+                      ),
             ),
           ],
         ),

@@ -66,11 +66,16 @@ class JobDetailScreen extends StatelessWidget {
                       const SizedBox(height: 4),
 
                       Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Icon(Icons.location_on, size: 18),
-                          const SizedBox(width: 4),
-                          Text(data['jobLocation'] ?? 'REMOTE'),
-                          const SizedBox(width: 150),
+                          Expanded(child: Row(
+                            children: [
+                              const Icon(Icons.location_on, size: 18),
+                              const SizedBox(width: 4),
+                              Text(data['jobLocation'] ?? 'REMOTE'),
+
+                            ],
+                          )),
 
                           IconButton(
                             icon: const Icon(Icons.view_in_ar),
