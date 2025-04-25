@@ -1,6 +1,62 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 class GlobalMethod {
+
+
+  static String formatDateWithSuperscript(dynamic input) {
+    DateTime? date;
+
+    // Handle Firestore Timestamp or DateTime directly
+    if (input is Timestamp) {
+      date = input.toDate();
+    } else if (input is DateTime) {
+      date = input;
+    } else if (input is String) {
+      try {
+        date = DateFormat('d-M-yyyy').parseStrict(input);
+      } catch (e) {
+        return input; // Return the original string if parsing fails
+      }
+    } else {
+      return input.toString();
+    }
+
+    final day = date.day;
+    final month = DateFormat('MMM').format(date);
+    final year = date.year;
+
+    // Determine suffix
+    String suffix;
+    if (day >= 11 && day <= 13) {
+      suffix = 'th';
+    } else {
+      switch (day % 10) {
+        case 1:
+          suffix = 'st';
+          break;
+        case 2:
+          suffix = 'nd';
+          break;
+        case 3:
+          suffix = 'rd';
+          break;
+        default:
+          suffix = 'th';
+      }
+    }
+
+    // Superscript mapping
+    final superscript = {
+      'st': 'ˢᵗ',
+      'nd': 'ⁿᵈ',
+      'rd': 'ʳᵈ',
+      'th': 'ᵗʰ',
+    };
+
+    return '$day${superscript[suffix]} $month $year';
+  }
 
 
   static void showErrorDialog({

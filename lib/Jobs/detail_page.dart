@@ -5,18 +5,37 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:velora2/Jobs/apply_job.dart';
 import '../Jobs/create_job.dart';
+import '../Services/global_methods.dart';
 import '../Widgets/the_app_bar.dart';
 
-class JobDetailScreen extends StatelessWidget {
+class JobDetailScreen extends StatefulWidget {
   final DocumentSnapshot job;
 
   const JobDetailScreen({super.key, required this.job});
 
   @override
+  State<JobDetailScreen> createState() => _JobDetailScreenState();
+}
+
+class _JobDetailScreenState extends State<JobDetailScreen> {
+  late Map<String, dynamic> data;
+  final user = FirebaseAuth.instance.currentUser;
+
+  @override
+  void initState() {
+    super.initState();
+    data = widget.job.data() as Map<String, dynamic>;
+
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final data = job.data() as Map<String, dynamic>;
-    final user = FirebaseAuth.instance.currentUser;
     final isOwner = user?.email == data['email'];
+
+    final deadlineDate = (data['deadline'] is Timestamp)
+        ? (data['deadline'] as Timestamp).toDate()
+        : DateTime.tryParse(data['deadline'] ?? '');
+    final isExpired = deadlineDate != null && DateTime.now().isAfter(deadlineDate);
 
     return Scaffold(
       appBar: TheAppBar(content: data['comName'] ?? 'Job Detail', style: 2),
@@ -36,20 +55,19 @@ class JobDetailScreen extends StatelessWidget {
                     borderRadius: BorderRadius.circular(12),
                     color: Colors.grey.shade200,
                   ),
-                  child:
-                      data['jobImage'] != null
-                          ? ClipRRect(
-                            borderRadius: BorderRadius.circular(12),
-                            child: Image.memory(
-                              base64Decode(data['jobImage']),
-                              fit: BoxFit.cover,
-                            ),
-                          )
-                          : const Icon(
-                            Icons.image,
-                            size: 40,
-                            color: Colors.grey,
-                          ),
+                  child: data['jobImage'] != null
+                      ? ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Image.memory(
+                      base64Decode(data['jobImage']),
+                      fit: BoxFit.cover,
+                    ),
+                  )
+                      : const Icon(
+                    Icons.image,
+                    size: 40,
+                    color: Colors.grey,
+                  ),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
@@ -64,19 +82,30 @@ class JobDetailScreen extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 4),
-
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Expanded(child: Row(
-                            children: [
-                              const Icon(Icons.location_on, size: 18),
-                              const SizedBox(width: 4),
-                              Text(data['jobLocation'] ?? 'REMOTE'),
-
-                            ],
-                          )),
-
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    const Icon(Icons.location_on, size: 18),
+                                    const SizedBox(width: 4),
+                                    Text(data['state'] ?? 'State'),
+                                    Text(', '),
+                                    Text(data['country'] ?? 'Country'),
+                                  ],
+                                ),
+                                Padding(
+                                  padding: const EdgeInsets.only(left: 19.0),
+                                  child:
+                                  Text(data['jobLocation'] ?? 'REMOTE'),
+                                )
+                              ],
+                            ),
+                          ),
                           IconButton(
                             icon: const Icon(Icons.view_in_ar),
                             onPressed: () {
@@ -96,14 +125,12 @@ class JobDetailScreen extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 20),
-
             const Divider(thickness: 1),
             const Text(
               'Job Details:',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 10),
-
             _labeledText(
               label: 'Description:',
               content: data['jobDesc'] ?? '',
@@ -111,7 +138,6 @@ class JobDetailScreen extends StatelessWidget {
               isMultiline: true,
             ),
             const SizedBox(height: 10),
-
             _labeledText(
               label: 'Minimum Academic:',
               content: data['minAca'] ?? '',
@@ -128,13 +154,19 @@ class JobDetailScreen extends StatelessWidget {
               labelColor: Colors.green,
             ),
             _labeledText(
-              label: 'Total Person Applied:',
-              content: '${data['applicants']}+',
-              labelColor: Colors.black87,
-            ),
-            _labeledText(
               label: 'Salary:',
               content: '\$${data['salary']}/month',
+              labelColor: Colors.green,
+              isBold: true,
+            ),
+            _labeledText(
+              label: 'Deadline:',
+              content: GlobalMethod.formatDateWithSuperscript(
+                (data['deadlineTimestamp'] is Timestamp)
+                    ? (data['deadlineTimestamp'] as Timestamp).toDate()
+                    : DateTime.tryParse(data['deadlineTimestamp'] ?? '') ?? DateTime.now(),
+              ),
+
               labelColor: Colors.green,
               isBold: true,
             ),
@@ -142,52 +174,56 @@ class JobDetailScreen extends StatelessWidget {
         ),
       ),
 
-      // 🚀 Bottom Action Buttons
-      floatingActionButton:
-          isOwner
-              ? Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  FloatingActionButton(
-                    heroTag: 'edit',
-                    backgroundColor: Color(0xff689f77),
-
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => CreateJob(jobData: job),
-                        ),
-                      );
-                    },
-                    child: const Icon(Icons.edit, color: Colors.white),
-                  ),
-                  const SizedBox(width: 16),
-                  FloatingActionButton(
-                    heroTag: 'delete',
-                    backgroundColor: Colors.red,
-                    onPressed: () async {
-                      await FirebaseFirestore.instance
-                          .collection('jobs')
-                          .doc(job.id)
-                          .delete();
-                      Navigator.pop(context);
-                    },
-                    child: const Icon(Icons.remove_circle, color: Colors.white),
-                  ),
-                ],
-              )
-              : FloatingActionButton.extended(
-                onPressed: () {
-                  Navigator.push(context,MaterialPageRoute(builder: (_)=>ApplyJobScreen(job: job)));
-                },
-                label: const Text(
-                  "APPLY",
-                  style: TextStyle(color: Colors.white),
-                ),
-                icon: const Icon(Icons.send, color: Colors.white),
-                backgroundColor: const Color(0xFF689f77),
+    floatingActionButton: isOwner
+        ? Row(
+      mainAxisAlignment: MainAxisAlignment.end,
+      children: [
+        FloatingActionButton(
+          heroTag: 'edit',
+          backgroundColor: const Color(0xff689f77),
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => CreateJob(jobData: widget.job),
               ),
+            );
+          },
+          child: const Icon(Icons.edit, color: Colors.white),
+        ),
+        const SizedBox(width: 16),
+        FloatingActionButton(
+          heroTag: 'delete',
+          backgroundColor: Colors.red,
+          onPressed: () async {
+            await FirebaseFirestore.instance
+                .collection('jobs')
+                .doc(widget.job.id)
+                .delete();
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Deleted successfully!')),
+            );
+            Navigator.pop(context);
+
+          },
+          child: const Icon(Icons.remove_circle, color: Colors.white),
+        ),
+      ],
+    )
+        : (!isExpired
+        ? FloatingActionButton.extended(
+      onPressed: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => ApplyJobScreen(job: widget.job)),
+        );
+      },
+      label: const Text("APPLY", style: TextStyle(color: Colors.white)),
+      icon: const Icon(Icons.send, color: Colors.white),
+      backgroundColor: const Color(0xFF689f77),
+    )
+        : null),
+
     );
   }
 
@@ -212,7 +248,8 @@ class JobDetailScreen extends StatelessWidget {
           children: [
             TextSpan(
               text: '$label ',
-              style: TextStyle(fontWeight: FontWeight.bold, color: labelColor),
+              style:
+              TextStyle(fontWeight: FontWeight.bold, color: labelColor),
             ),
             TextSpan(
               text: content,

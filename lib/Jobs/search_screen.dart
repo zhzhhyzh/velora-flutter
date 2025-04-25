@@ -179,6 +179,7 @@ class _AllJobsScreenState extends State<AllJobsScreen> {
       );
     }
   }
+
   Widget _buildJobTile(Map<String, dynamic> data, DocumentSnapshot doc) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -201,14 +202,16 @@ class _AllJobsScreenState extends State<AllJobsScreen> {
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(8),
-                  child: data['jobImage'] != null
-                      ? Image.memory(
-                    base64Decode(data['jobImage']),
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) =>
-                    const Icon(Icons.image_not_supported),
-                  )
-                      : const Icon(Icons.image, color: Colors.grey),
+                  child:
+                      data['jobImage'] != null
+                          ? Image.memory(
+                            base64Decode(data['jobImage']),
+                            fit: BoxFit.cover,
+                            errorBuilder:
+                                (_, __, ___) =>
+                                const Icon(Icons.image_not_supported, color: Colors.grey),
+                          )
+                          : const Icon(Icons.image, color: Colors.grey),
                 ),
               ),
               Expanded(
@@ -244,7 +247,11 @@ class _AllJobsScreenState extends State<AllJobsScreen> {
                   children: [
                     Row(
                       children: [
-                        const Icon(Icons.location_on, size: 18, color: Colors.black),
+                        const Icon(
+                          Icons.location_on,
+                          size: 18,
+                          color: Colors.black,
+                        ),
                         const SizedBox(width: 4),
                         Text(
                           data['jobLocation'] ?? 'Job Location',
@@ -271,10 +278,11 @@ class _AllJobsScreenState extends State<AllJobsScreen> {
       ),
     );
   }
-  Widget _buildJobCard(Map<String, dynamic> data, DocumentSnapshot job) {
+
+  Widget _buildJobCard(Map<String, dynamic> data, DocumentSnapshot job,{bool isExpired = false}) {
     final location = [
       data['country']?.toString(),
-      data['state']?.toString()
+      data['state']?.toString(),
     ].where((e) => e != null && e.trim().isNotEmpty).join(', ');
 
     return Padding(
@@ -283,6 +291,7 @@ class _AllJobsScreenState extends State<AllJobsScreen> {
         onTap: () => _onJobTap(job),
         child: Container(
           decoration: BoxDecoration(
+            color: isExpired ? Colors.red.shade100 : Colors.white,
             border: Border.all(color: Colors.black),
             borderRadius: BorderRadius.circular(12),
           ),
@@ -298,14 +307,18 @@ class _AllJobsScreenState extends State<AllJobsScreen> {
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(8),
-                  child: data['jobImage'] != null
-                      ? Image.memory(
-                    base64Decode(data['jobImage']),
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) =>
-                    const Icon(Icons.image_not_supported, color: Colors.grey),
-                  )
-                      : const Icon(Icons.image, color: Colors.grey),
+                  child:
+                      data['jobImage'] != null
+                          ? Image.memory(
+                            base64Decode(data['jobImage']),
+                            fit: BoxFit.cover,
+                            errorBuilder:
+                                (_, __, ___) => const Icon(
+                                  Icons.image_not_supported,
+                                  color: Colors.grey,
+                                ),
+                          )
+                          : const Icon(Icons.image, color: Colors.grey),
                 ),
               ),
               Expanded(
@@ -341,7 +354,11 @@ class _AllJobsScreenState extends State<AllJobsScreen> {
                   children: [
                     Row(
                       children: [
-                        const Icon(Icons.location_on, size: 18, color: Colors.black),
+                        const Icon(
+                          Icons.location_on,
+                          size: 18,
+                          color: Colors.black,
+                        ),
                         const SizedBox(width: 4),
                         Text(
                           location.isNotEmpty ? location : 'Job Location',
@@ -498,69 +515,143 @@ class _AllJobsScreenState extends State<AllJobsScreen> {
             ),
 
             Expanded(
-              child: StreamBuilder<QuerySnapshot>(
-                stream: _getStream(),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting)
-                    return const Center(child: CircularProgressIndicator());
-                  if (!snapshot.hasData || snapshot.data!.docs.isEmpty)
-                    return const Center(child: Text("No jobs found."));
+              child: RefreshIndicator(
+                onRefresh: () async {
+                  setState(() {});
+                },
+                child: StreamBuilder<QuerySnapshot>(
+                  stream: _getStream(),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting)
+                      return const Center(child: CircularProgressIndicator());
+                    if (!snapshot.hasData || snapshot.data!.docs.isEmpty)
+                      return const Center(child: Text("No jobs found."));
+                    if (snapshot.hasError) {
+                      return Center(child: Text("An error occurred: ${snapshot
+                          .error}"));
+                    }
 
-                  final filteredJobs =
-                      snapshot.data!.docs.where((doc) {
-                        final data = doc.data() as Map<String, dynamic>;
-                        final title =
-                            (data['jobTitle'] ?? '').toString().toLowerCase();
-                        final category = (data['jobCat'] ?? '').toString();
-                        final type = (data['jobType'] ?? '').toString();
-                        final aca = (data['minAca'] ?? '').toString();
-                        final matchesSearch =
-                            _searchQuery.isEmpty ||
-                            title.contains(_searchQuery);
-                        final matchesCategory =
-                            jobCatFilter == null || jobCatFilter == category;
-                        final matchesType =
-                            jobTypeFilter == null || jobTypeFilter == type;
-                        final matchesAca =
-                            minAcaFilter == null || minAcaFilter == aca;
-                        return matchesSearch &&
-                            matchesCategory &&
-                            matchesType &&
-                            matchesAca;
-                      }).toList();
-                  return ListView.builder(
-                    itemCount: filteredJobs.length,
-                    itemBuilder: (context, index) {
-                      final doc = filteredJobs[index];
+                    final appliedDocs = snapshot.data!.docs;
+                    final uniqueJobIds = <String>{};
 
-                      // If tab is Applied, fetch job from jobs collection
-                      if (selectedTab == 'Applied') {
-                        final jobId = (doc.data() as Map<String, dynamic>)['jobId'];
+                    // Collect unique job IDs
+                    for (final doc in appliedDocs) {
+                      final jobId = (doc.data() as Map<String,
+                          dynamic>)['jobId'];
+                      if (jobId != null) {
+                        uniqueJobIds.add(jobId);
+                      }
+                    }
 
-                        return FutureBuilder<DocumentSnapshot>(
-                          future: FirebaseFirestore.instance.collection('jobs').doc(jobId).get(),
-                          builder: (context, snapshot) {
-                            if (!snapshot.hasData || !snapshot.data!.exists) {
-                              return const SizedBox(); // or error widget
+                    // Fetch job documents for unique job IDs
+                    return FutureBuilder<List<DocumentSnapshot>>(
+                      future: Future.wait(uniqueJobIds.map((jobId) {
+                        return FirebaseFirestore.instance.collection('jobs')
+                            .doc(jobId)
+                            .get();
+                      })),
+                      builder: (context, jobSnapshots) {
+                        if (jobSnapshots.connectionState ==
+                            ConnectionState.waiting) {
+                          return const Center(
+                              child: CircularProgressIndicator());
+                        }
+                        if (jobSnapshots.hasError) {
+                          return Center(child: Text(
+                              "An error occurred: ${jobSnapshots.error}"));
+                        }
+
+                        final jobDocs = jobSnapshots.data!;
+                        final filteredJobs = jobDocs.where((doc) {
+                          if (!doc.exists) return false;
+                          final data = doc.data() as Map<String, dynamic>;
+                          final deadline = data['deadline'];
+                          DateTime? deadlineDate;
+
+                          if (deadline is Timestamp) {
+                            deadlineDate = deadline.toDate();
+                          } else if (deadline is String) {
+                            deadlineDate = DateTime.tryParse(deadline);
+                          }
+
+                          final isExpired = deadlineDate != null &&
+                              DateTime.now().isAfter(deadlineDate);
+
+                          final matchesSearch = _searchQuery.isEmpty ||
+                              (data['jobTitle'] ?? '').toString()
+                                  .toLowerCase()
+                                  .contains(_searchQuery);
+                          final matchesCategory = jobCatFilter == null ||
+                              jobCatFilter == data['jobCat'];
+                          final matchesType = jobTypeFilter == null ||
+                              jobTypeFilter == data['jobType'];
+                          final matchesAca = minAcaFilter == null ||
+                              minAcaFilter == data['minAca'];
+
+                          return !isExpired && matchesSearch &&
+                              matchesCategory && matchesType && matchesAca;
+                        }).toList();
+
+                        return ListView.builder(
+                          itemCount: filteredJobs.length,
+                          itemBuilder: (context, index) {
+                            final doc = filteredJobs[index];
+                            final data = doc.data() as Map<String, dynamic>;
+                            // If tab is Applied, fetch job from jobs collection
+                            if (selectedTab == 'Applied') {
+                              final jobId =
+                              (doc.data() as Map<String, dynamic>)['jobId'];
+
+                              return FutureBuilder<DocumentSnapshot>(
+                                future:
+                                FirebaseFirestore.instance
+                                    .collection('jobs')
+                                    .doc(jobId)
+                                    .get(),
+                                builder: (context, snapshot) {
+                                  if (snapshot.connectionState ==
+                                      ConnectionState.waiting) {
+                                    return const Center(
+                                      child: CircularProgressIndicator(),
+                                    );
+                                  }
+                                  if (!snapshot.hasData ||
+                                      !snapshot.data!.exists) {
+                                    return const SizedBox(); // or an error widget
+                                  }
+
+                                  final jobDoc = snapshot.data!;
+                                  final jobData =
+                                  jobDoc.data() as Map<String, dynamic>;
+                                  return _buildJobCard(jobData, jobDoc);
+                                },
+                              );
+                            } else if(selectedTab == 'Explore'){
+                              final data = doc.data() as Map<String, dynamic>;
+                              return _buildJobCard(data, doc);
                             }
+                            else {
+                              final doc = filteredJobs[index];
+                              final data = doc.data() as Map<String, dynamic>;
+                              final deadline = data['deadline'];
+                              DateTime? deadlineDate;
 
-                            final jobDoc = snapshot.data!;
-                            final jobData = jobDoc.data() as Map<String, dynamic>;
-                            return _buildJobCard(jobData, jobDoc);
+                              if (deadline is Timestamp) {
+                                deadlineDate = deadline.toDate();
+                              } else if (deadline is String) {
+                                deadlineDate = DateTime.tryParse(deadline);
+                              }
+
+                              final isExpired = deadlineDate != null && DateTime.now().isAfter(deadlineDate);
+                              return _buildJobCard(data, doc, isExpired: isExpired);
+                            }
                           },
                         );
-                      } else {
-                        final data = doc.data() as Map<String, dynamic>;
-                        return _buildJobCard(data, doc);
-                      }
-                    },
-                  );
-
-
-                },
-              ),
+                      },
+                    );
+                  }),
             ),
-          ],
+    )],
         ),
       ),
     );
