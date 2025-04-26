@@ -1,12 +1,15 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'dart:convert';
+import 'dart:typed_data';
 
 import '../Widgets/bottom_nav_bar.dart';
 import '../Widgets/the_app_bar.dart';
 import '../user_state.dart';
 
 class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({super.key});
+  const ProfileScreen({Key? key}) : super(key: key);
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
@@ -14,6 +17,41 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  String? displayName;
+  String? email;
+  Uint8List? profileImageBytes;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+
+  Future<void> _loadUserData() async {
+    final user = _auth.currentUser;
+    if (user != null) {
+      final doc = await _firestore.collection('users').doc(user.uid).get();
+      if (doc.exists) {
+        final data = doc.data();
+        setState(() {
+          displayName = data?['displayName'];
+          email = data?['email'];
+          final base64Image = data?['profileImage'];
+          if (base64Image != null) {
+            profileImageBytes = decodeBase64Image(base64Image);
+          }
+        });
+      }
+    }
+  }
+
+  Uint8List decodeBase64Image(String base64String) {
+    final RegExp regex = RegExp(r'data:image/[^;]+;base64,');
+    base64String = base64String.replaceAll(regex, '');
+    return base64.decode(base64String);
+  }
 
   void _logout(BuildContext context) {
     showDialog(
@@ -92,17 +130,39 @@ class _ProfileScreenState extends State<ProfileScreen> {
       backgroundColor: Colors.white,
       appBar: TheAppBar(content: 'User Profile'),
       body: Center(
-        child: TextButton.icon(
-          onPressed: () => _logout(context),
-          icon: const Icon(Icons.lock, color: Color(0xFFFF0000)),
-          label: const Text(
-            'Logout',
-            style: TextStyle(
-              color: Color(0xFFFF0000),
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            if (profileImageBytes != null)
+              CircleAvatar(
+                radius: 50,
+                backgroundImage: MemoryImage(profileImageBytes!),
+              ),
+            const SizedBox(height: 16),
+            if (displayName != null)
+              Text(
+                displayName!,
+                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+            if (email != null)
+              Text(
+                email!,
+                style: const TextStyle(fontSize: 16),
+              ),
+            const SizedBox(height: 24),
+            TextButton.icon(
+              onPressed: () => _logout(context),
+              icon: const Icon(Icons.lock, color: Color(0xFFFF0000)),
+              label: const Text(
+                'Logout',
+                style: TextStyle(
+                  color: Color(0xFFFF0000),
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ),
-          ),
+          ],
         ),
       ),
     );
