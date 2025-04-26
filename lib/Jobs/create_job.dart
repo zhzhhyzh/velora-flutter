@@ -16,7 +16,13 @@ import 'package:velora2/Widgets/the_app_bar.dart';
 import '../Services/global_variables.dart';
 import 'package:path_provider/path_provider.dart';
 
-
+Future<File> _convertBase64ToFile(String base64Str, String fileName) async {
+  final bytes = base64Decode(base64Str);
+  final dir = await getTemporaryDirectory();
+  final file = File('${dir.path}/$fileName');
+  await file.writeAsBytes(bytes);
+  return file;
+}
 class CreateJob extends StatefulWidget {
   final DocumentSnapshot? jobData;
 
@@ -33,9 +39,9 @@ class MaxValueInputFormatter extends TextInputFormatter {
 
   @override
   TextEditingValue formatEditUpdate(
-    TextEditingValue oldValue,
-    TextEditingValue newValue,
-  ) {
+      TextEditingValue oldValue,
+      TextEditingValue newValue,
+      ) {
     if (newValue.text.isEmpty) return newValue;
 
     final intValue = int.tryParse(newValue.text);
@@ -110,14 +116,14 @@ class _CreateJobState extends State<CreateJob> {
       dDateTimestamp = data['deadlineTimestamp'];
       buttonText = widget.jobData != null ? "Save It" : "Post Now";
       if (data['jobImage'] != null) {
-        GlobalMethod.convertBase64ToFile(data['jobImage'], 'job_image.png').then((file) {
+        _convertBase64ToFile(data['jobImage'], 'job_image.png').then((file) {
           setState(() {
             imageFile = file;
           });
         });
       }
       if (data['arImage'] != null) {
-        GlobalMethod.convertBase64ToFile(data['arImage'], 'ar_image.png').then((file) {
+        _convertBase64ToFile(data['arImage'], 'ar_image.png').then((file) {
           setState(() {
             imageFile2 = file;
           });
@@ -147,7 +153,274 @@ class _CreateJobState extends State<CreateJob> {
     _countryController.dispose;
   }
 
+  Widget _textTitles({required String label}) {
+    return Padding(
+      padding: const EdgeInsets.all(5.0),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: Colors.black,
+          fontSize: 20,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
 
+  Widget _textField({
+    required String valueKey,
+    required TextEditingController controller,
+    required bool enabled,
+    required Function fct,
+    required int maxLength,
+    required String hint,
+    List<TextInputFormatter>? inputFormatters,
+    TextInputType? keyboardType,
+  }) {
+    return Padding(
+      padding: EdgeInsets.all(5.0),
+      child: TextField(
+        keyboardType: TextInputType.number,
+        inputFormatters: <TextInputFormatter>[
+          FilteringTextInputFormatter.allow(RegExp(r'[0-9]')),
+          FilteringTextInputFormatter.digitsOnly,
+          MaxValueInputFormatter(maxLength),
+        ],
+        controller: controller,
+        enabled: enabled,
+        key: ValueKey(valueKey),
+        style: const TextStyle(color: Colors.white),
+        maxLines: valueKey == 'JobDescription' ? 3 : 1,
+
+        decoration: InputDecoration(
+          hintText: hint,
+          hintStyle: TextStyle(color: Color(0xFFb9b9b9)),
+          filled: true,
+          fillColor: Colors.black54,
+          enabledBorder: UnderlineInputBorder(
+            borderSide: BorderSide(color: Colors.black),
+          ),
+          focusedBorder: UnderlineInputBorder(
+            borderSide: BorderSide(color: Colors.black),
+          ),
+          errorBorder: UnderlineInputBorder(
+            borderSide: BorderSide(color: Colors.red),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _textFormField({
+    required String valueKey,
+    required TextEditingController controller,
+    required bool enabled,
+    required Function fct,
+    required int maxLength,
+    required String hint,
+    List<TextInputFormatter>? inputFormatters,
+    TextInputType? keyboardType,
+  }) {
+    return Padding(
+      padding: EdgeInsets.all(5.0),
+      child: InkWell(
+        onTap: () {
+          fct();
+        },
+        child: TextFormField(
+          validator: (value) {
+            if (value!.isEmpty) {
+              return 'Value is missing';
+            }
+            return null;
+          },
+          controller: controller,
+          enabled: enabled,
+          key: ValueKey(valueKey),
+          style: const TextStyle(color: Colors.white),
+          maxLines: valueKey == 'JobDescription' ? 3 : 1,
+          maxLength: maxLength,
+          keyboardType: TextInputType.text,
+
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: TextStyle(color: Color(0xFFb9b9b9)),
+            filled: true,
+            fillColor: Colors.black54,
+            enabledBorder: UnderlineInputBorder(
+              borderSide: BorderSide(color: Colors.black),
+            ),
+            focusedBorder: UnderlineInputBorder(
+              borderSide: BorderSide(color: Colors.black),
+            ),
+            errorBorder: UnderlineInputBorder(
+              borderSide: BorderSide(color: Colors.red),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _textFormFieldDate({
+    required String valueKey,
+    required TextEditingController controller,
+    required bool enabled,
+    required Function fct,
+    required String hint,
+    List<TextInputFormatter>? inputFormatters,
+    TextInputType? keyboardType,
+  }) {
+    return Padding(
+      padding: EdgeInsets.all(5.0),
+      child: InkWell(
+        onTap: () {
+          fct();
+        },
+        child: IgnorePointer(
+          // prevents keyboard from appearing on tap
+          child: TextFormField(
+            validator: (value) {
+              if (value!.isEmpty) {
+                return 'Value is missing';
+              }
+              return null;
+            },
+            controller: controller,
+            enabled: enabled,
+            key: ValueKey(valueKey),
+            style: const TextStyle(color: Colors.white),
+            maxLines: valueKey == 'JobDescription' ? 3 : 1,
+            keyboardType: TextInputType.text,
+            decoration: InputDecoration(
+              suffixIcon: Icon(Icons.calendar_month, color: Colors.white),
+              // right-aligned icon
+              hintText: hint,
+              hintStyle: TextStyle(color: Color(0xFFb9b9b9)),
+              filled: true,
+              fillColor: Colors.black54,
+              enabledBorder: UnderlineInputBorder(
+                borderSide: BorderSide(color: Colors.black),
+              ),
+              focusedBorder: UnderlineInputBorder(
+                borderSide: BorderSide(color: Colors.black),
+              ),
+              errorBorder: UnderlineInputBorder(
+                borderSide: BorderSide(color: Colors.red),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  InputDecoration _dropdownDecoration() {
+    return InputDecoration(
+      filled: true,
+      fillColor: Colors.black54,
+      hintStyle: const TextStyle(color: Color(0xFFb9b9b9)),
+      enabledBorder: const UnderlineInputBorder(
+        borderSide: BorderSide(color: Colors.black),
+      ),
+      focusedBorder: const UnderlineInputBorder(
+        borderSide: BorderSide(color: Colors.black),
+      ),
+      errorBorder: const UnderlineInputBorder(
+        borderSide: BorderSide(color: Colors.red),
+      ),
+    );
+  }
+
+
+
+  void _showImageDialog() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text('Please choose an option'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              InkWell(
+                onTap: () {
+                  _getFromCamera();
+                },
+                child: Row(
+                  children: [
+                    Padding(
+                      padding: EdgeInsets.all(4.0),
+                      child: Icon(Icons.camera, color: Colors.purple),
+                    ),
+                    Text('Camera', style: TextStyle(color: Colors.purple)),
+                  ],
+                ),
+              ),
+              InkWell(
+                onTap: () {
+                  _getFromGallery();
+                },
+                child: Row(
+                  children: [
+                    Padding(
+                      padding: EdgeInsets.all(4.0),
+                      child: Icon(Icons.image, color: Colors.purple),
+                    ),
+                    Text('Gallery', style: TextStyle(color: Colors.purple)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showImageDialog2() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text('Please choose an option'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              InkWell(
+                onTap: () {
+                  _getFromCamera2();
+                },
+                child: Row(
+                  children: [
+                    Padding(
+                      padding: EdgeInsets.all(4.0),
+                      child: Icon(Icons.camera, color: Colors.purple),
+                    ),
+                    Text('Camera', style: TextStyle(color: Colors.purple)),
+                  ],
+                ),
+              ),
+              InkWell(
+                onTap: () {
+                  _getFromGallery2();
+                },
+                child: Row(
+                  children: [
+                    Padding(
+                      padding: EdgeInsets.all(4.0),
+                      child: Icon(Icons.image, color: Colors.purple),
+                    ),
+                    Text('Gallery', style: TextStyle(color: Colors.purple)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
 
   void _pickDateDialog() async {
     dDate = await showDatePicker(
@@ -160,7 +433,7 @@ class _CreateJobState extends State<CreateJob> {
     if (dDate != null) {
       setState(() {
         _deadlineController.text =
-            '${dDate!.day} - ${dDate!.month} - ${dDate!.year}';
+        '${dDate!.day} - ${dDate!.month} - ${dDate!.year}';
         dDateTimestamp = Timestamp.fromMicrosecondsSinceEpoch(
           dDate!.microsecondsSinceEpoch,
         );
@@ -321,11 +594,7 @@ class _CreateJobState extends State<CreateJob> {
                               child: Center(
                                 child: GestureDetector(
                                   onTap: () {
-                                    GlobalMethod.showImagePickerDialog(
-                                      context:context,
-                                      onCameraTap: _getFromCamera,
-                                      onGalleryTap: _getFromGallery,
-                                    );
+                                    _showImageDialog();
                                   },
                                   child: Container(
                                     width: size.width * 0.24,
@@ -340,16 +609,16 @@ class _CreateJobState extends State<CreateJob> {
                                     child: ClipRRect(
                                       borderRadius: BorderRadius.circular(16),
                                       child:
-                                          imageFile == null
-                                              ? const Icon(
-                                                Icons.camera_enhance_sharp,
-                                                color: Color(0xFF689F77),
-                                                size: 30,
-                                              )
-                                              : Image.file(
-                                                imageFile!,
-                                                fit: BoxFit.fill,
-                                              ),
+                                      imageFile == null
+                                          ? const Icon(
+                                        Icons.camera_enhance_sharp,
+                                        color: Color(0xFF689F77),
+                                        size: 30,
+                                      )
+                                          : Image.file(
+                                        imageFile!,
+                                        fit: BoxFit.fill,
+                                      ),
                                     ),
                                   ),
                                 ),
@@ -360,11 +629,7 @@ class _CreateJobState extends State<CreateJob> {
                           // Second GestureDetector - Right aligned
                           GestureDetector(
                             onTap: () {
-                              GlobalMethod.showImagePickerDialog(
-                                context: context,
-                                onCameraTap: _getFromCamera2,
-                                onGalleryTap: _getFromGallery2,
-                              );
+                              _showImageDialog2();
                             },
                             child: Container(
                               width: size.width * 0.24,
@@ -379,16 +644,16 @@ class _CreateJobState extends State<CreateJob> {
                               child: ClipRRect(
                                 borderRadius: BorderRadius.circular(16),
                                 child:
-                                    imageFile2 == null
-                                        ? const Icon(
-                                          Icons.view_in_ar,
-                                          color: Color(0xFF689F77),
-                                          size: 30,
-                                        )
-                                        : Image.file(
-                                          imageFile2!,
-                                          fit: BoxFit.fill,
-                                        ),
+                                imageFile2 == null
+                                    ? const Icon(
+                                  Icons.view_in_ar,
+                                  color: Color(0xFF689F77),
+                                  size: 30,
+                                )
+                                    : Image.file(
+                                  imageFile2!,
+                                  fit: BoxFit.fill,
+                                ),
                               ),
                             ),
                           ),
@@ -405,21 +670,21 @@ class _CreateJobState extends State<CreateJob> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        GlobalMethod.textTitle(label: 'Job Title:'),
-                        GlobalMethod.textFormField(
+                        _textTitles(label: 'Job Title:'),
+                        _textFormField(
                           valueKey: "JobTitle",
                           controller: _jobTitleController,
                           enabled: true,
-                          onTap: () {},
+                          fct: () {},
                           maxLength: 100,
                           hint: "Enter Job Title",
                         ),
-                        GlobalMethod.textTitle(label: 'Company Name:'),
-                        GlobalMethod.textFormField(
+                        _textTitles(label: 'Company Name:'),
+                        _textFormField(
                           valueKey: "comName",
                           controller: _comNameController,
                           enabled: true,
-                          onTap: () {},
+                          fct: () {},
                           maxLength: 100,
                           hint: "Enter Company Name",
                         ),
@@ -427,122 +692,124 @@ class _CreateJobState extends State<CreateJob> {
                           children: [
                             // Country Dropdown
                             Expanded(
-                              child: GlobalMethod.dropdownFormField(
-                                valueKey: "JobCategory",
-                                selectedValue: _jobCatController.text.isNotEmpty ? _jobCatController.text : null,
-                                itemsList: GlobalDD.jobCategoryList,
-                                hint: "Select Job Category",
-                                onChanged: (newValue) {
+                              child: DropdownButtonFormField<String>(
+                                value:
+                                _countryController.text.isNotEmpty
+                                    ? _countryController.text
+                                    : null,
+                                decoration: _dropdownDecoration(),
+                                hint: Text(
+                                  "Select Country",
+                                  style: TextStyle(color: Color(0xFFD9D9D9)),
+                                ),
+                                items:
+                                GlobalDD.countries.map((String country) {
+                                  return DropdownMenuItem<String>(
+                                    value: country,
+                                    child: Text(country),
+                                  );
+                                }).toList(),
+                                dropdownColor: Colors.black87,
+                                iconEnabledColor: Colors.white,
+                                style: const TextStyle(color: Colors.white),
+                                onChanged: (String? value) {
                                   setState(() {
-                                    _jobCatController.text = newValue!;
+                                    _countryController.text = value!;
+                                    _stateController
+                                        .clear(); // Reset state selection
                                   });
                                 },
-                                validator: (value) {
-                                  if (value == null || value.isEmpty) {
-                                    return 'Please select a job category';
-                                  }
-                                  return null;
-                                },
                               ),
-
                             ),
                             const SizedBox(width: 10),
                             // State Dropdown
-                            Row(
-                              children: [
-                                // Country Dropdown
-                                Expanded(
-                                  child: GlobalMethod.dropdownFormField(
-                                    valueKey: "Country",
-                                    selectedValue: _countryController.text.isNotEmpty ? _countryController.text : null,
-                                    itemsList: GlobalDD.countries,
-                                    hint: "Select Country",
-                                    onChanged: (newValue) {
-                                      setState(() {
-                                        _countryController.text = newValue!;
-                                        _stateController.clear();
-                                      });
-                                    },
-                                    validator: (value) {
-                                      if (value == null || value.isEmpty) {
-                                        return 'Please select a country';
-                                      }
-                                      return null;
-                                    },
-                                  ),
-                                ),
-                                const SizedBox(width: 10),
-
-                                // State Dropdown
-                                Expanded(
-                                  child: _countryController.text.isEmpty
-                                      ? GestureDetector(
-                                    onTap: () {
-                                      GlobalMethod.showErrorDialog(
-                                        error: "Please select country first",
-                                        ctx: context,
-                                      );
-                                    },
-                                    child: InputDecorator(
-                                      decoration: GlobalMethod.dropdownDecoration(),
-                                      child: Text(
-                                        "Select State",
-                                        style: TextStyle(
-                                          color: Color(0xFFD9D9D9),
-                                        ),
-                                      ),
+                            Expanded(
+                              child:
+                              _countryController.text.isEmpty
+                                  ? GestureDetector(
+                                onTap: () {
+                                  GlobalMethod.showErrorDialog(
+                                    error:
+                                    "Please select country first",
+                                    ctx: context,
+                                  );
+                                },
+                                child: InputDecorator(
+                                  decoration: _dropdownDecoration(),
+                                  child: Text(
+                                    "Select State",
+                                    style: TextStyle(
+                                      color: Color(0xFFD9D9D9),
                                     ),
-                                  )
-                                      : GlobalMethod.dropdownFormField(
-                                    valueKey: "State",
-                                    selectedValue: _stateController.text.isNotEmpty ? _stateController.text : null,
-                                    itemsList: GlobalDD.states[_countryController.text] ?? [],
-                                    hint: "Select State",
-                                    onChanged: (newValue) {
-                                      setState(() {
-                                        _stateController.text = newValue!;
-                                      });
-                                    },
-                                    validator: (value) {
-                                      if (value == null || value.isEmpty) {
-                                        return 'Please select a state';
-                                      }
-                                      return null;
-                                    },
                                   ),
                                 ),
-                              ],
+                              )
+                                  : DropdownButtonFormField<String>(
+                                value:
+                                _stateController.text.isNotEmpty
+                                    ? _stateController.text
+                                    : null,
+                                decoration: _dropdownDecoration(),
+                                dropdownColor: Colors.black87,
+                                iconEnabledColor: Colors.white,
+                                hint: Text(
+                                  "Select State",
+                                  style: TextStyle(
+                                    color: Color(0xFFD9D9D9),
+                                  ),
+                                ),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                ),
+                                items:
+                                (GlobalDD.states[_countryController
+                                    .text] ??
+                                    [])
+                                    .map((String state) {
+                                  return DropdownMenuItem<
+                                      String
+                                  >(
+                                    value: state,
+                                    child: Text(state),
+                                  );
+                                })
+                                    .toList(),
+                                onChanged: (String? value) {
+                                  setState(() {
+                                    _stateController.text = value!;
+                                  });
+                                },
+                              ),
                             ),
-
                           ],
                         ),
 
-                        GlobalMethod.textTitle(label: "Job Category:"),
+                        _textTitles(label: "Job Category:"),
                         DropdownButtonFormField<String>(
                           value:
-                              GlobalDD.jobCategoryList.contains(
-                                    _jobCatController.text,
-                                  )
-                                  ? _jobCatController.text
-                                  : null,
+                          GlobalDD.jobCategoryList.contains(
+                            _jobCatController.text,
+                          )
+                              ? _jobCatController.text
+                              : null,
                           hint: Text(
                             "Select Job Category",
                             style: TextStyle(color: Color(0xFFD9D9D9)),
                           ),
-                          decoration: GlobalMethod.dropdownDecoration(),
+                          decoration: _dropdownDecoration(),
                           dropdownColor: Colors.black87,
                           iconEnabledColor: Colors.white,
                           style: const TextStyle(color: Colors.white),
                           items:
-                              GlobalDD.jobCategoryList.map((String category) {
-                                return DropdownMenuItem<String>(
-                                  value: category,
-                                  child: Text(
-                                    category,
-                                    style: const TextStyle(color: Colors.white),
-                                  ),
-                                );
-                              }).toList(),
+                          GlobalDD.jobCategoryList.map((String category) {
+                            return DropdownMenuItem<String>(
+                              value: category,
+                              child: Text(
+                                category,
+                                style: const TextStyle(color: Colors.white),
+                              ),
+                            );
+                          }).toList(),
                           onChanged: (newValue) {
                             setState(() {
                               _jobCatController.text = newValue!;
@@ -557,32 +824,32 @@ class _CreateJobState extends State<CreateJob> {
                         ),
 
                         const SizedBox(height: 20),
-                        GlobalMethod.textTitle(label: "Job Type:"),
+                        _textTitles(label: "Job Type:"),
                         DropdownButtonFormField<String>(
                           value:
-                              GlobalDD.jobTypeList.contains(
-                                    _jobTypeController.text,
-                                  )
-                                  ? _jobTypeController.text
-                                  : null,
+                          GlobalDD.jobTypeList.contains(
+                            _jobTypeController.text,
+                          )
+                              ? _jobTypeController.text
+                              : null,
                           hint: Text(
                             "Select Job Type",
                             style: TextStyle(color: Color(0xFFD9D9D9)),
                           ),
-                          decoration: GlobalMethod.dropdownDecoration(),
+                          decoration: _dropdownDecoration(),
                           dropdownColor: Colors.black87,
                           iconEnabledColor: Colors.white,
                           style: const TextStyle(color: Colors.white),
                           items:
-                              GlobalDD.jobTypeList.map((String type) {
-                                return DropdownMenuItem<String>(
-                                  value: type,
-                                  child: Text(
-                                    type,
-                                    style: const TextStyle(color: Colors.white),
-                                  ),
-                                );
-                              }).toList(),
+                          GlobalDD.jobTypeList.map((String type) {
+                            return DropdownMenuItem<String>(
+                              value: type,
+                              child: Text(
+                                type,
+                                style: const TextStyle(color: Colors.white),
+                              ),
+                            );
+                          }).toList(),
                           onChanged: (newValue) {
                             setState(() {
                               _jobTypeController.text = newValue!;
@@ -597,42 +864,42 @@ class _CreateJobState extends State<CreateJob> {
                         ),
                         const SizedBox(height: 20),
 
-                        GlobalMethod.textTitle(label: 'Job Description:'),
-                        GlobalMethod.textFormField(
+                        _textTitles(label: 'Job Description:'),
+                        _textFormField(
                           valueKey: "JobDescription",
                           controller: _jobDescController,
                           enabled: true,
-                          onTap: () {},
+                          fct: () {},
                           maxLength: 1000,
                           hint: "Enter Job Description",
                         ),
 
-                        GlobalMethod.textTitle(label: 'Min. Academic Level:'),
+                        _textTitles(label: 'Min. Academic Level:'),
                         DropdownButtonFormField<String>(
                           value:
-                              GlobalDD.academicLists.contains(
-                                    _minAcaController.text,
-                                  )
-                                  ? _minAcaController.text
-                                  : null,
+                          GlobalDD.academicLists.contains(
+                            _minAcaController.text,
+                          )
+                              ? _minAcaController.text
+                              : null,
                           hint: Text(
                             "Select Min. Academic Level",
                             style: TextStyle(color: Color(0xFFD9D9D9)),
                           ),
-                          decoration: GlobalMethod.dropdownDecoration(),
+                          decoration: _dropdownDecoration(),
                           dropdownColor: Colors.black87,
                           iconEnabledColor: Colors.white,
                           style: const TextStyle(color: Colors.white),
                           items:
-                              GlobalDD.academicLists.map((String type) {
-                                return DropdownMenuItem<String>(
-                                  value: type,
-                                  child: Text(
-                                    type,
-                                    style: const TextStyle(color: Colors.white),
-                                  ),
-                                );
-                              }).toList(),
+                          GlobalDD.academicLists.map((String type) {
+                            return DropdownMenuItem<String>(
+                              value: type,
+                              child: Text(
+                                type,
+                                style: const TextStyle(color: Colors.white),
+                              ),
+                            );
+                          }).toList(),
                           onChanged: (newValue) {
                             setState(() {
                               _minAcaController.text = newValue!;
@@ -646,12 +913,12 @@ class _CreateJobState extends State<CreateJob> {
                           },
                         ),
 
-                        GlobalMethod.textTitle(label: 'Min. Work Experience (year):'),
-                        GlobalMethod.numberTextField(
+                        _textTitles(label: 'Min. Work Experience (year):'),
+                        _textField(
                           valueKey: "minWork",
                           controller: _minWorkController,
                           enabled: true,
-
+                          fct: () {},
                           maxLength: 50,
 
                           hint: "Enter Min. Work Experience (0 for no)",
@@ -661,12 +928,12 @@ class _CreateJobState extends State<CreateJob> {
                           ],
                         ),
 
-                        GlobalMethod.textTitle(label: 'Finding Applicant:'),
-                        GlobalMethod.numberTextField(
+                        _textTitles(label: 'Finding Applicant:'),
+                        _textField(
                           valueKey: "finApp",
                           controller: _finAppController,
                           enabled: true,
-
+                          fct: () {},
                           maxLength: 9999,
 
                           hint: "Enter No. of Applicants Finding",
@@ -676,12 +943,12 @@ class _CreateJobState extends State<CreateJob> {
                           ],
                         ),
 
-                        GlobalMethod.textTitle(label: 'Salary (month):'),
-                        GlobalMethod.numberTextField(
+                        _textTitles(label: 'Salary (month):'),
+                        _textField(
                           valueKey: "salary",
                           controller: _salaryController,
                           enabled: true,
-
+                          fct: () {},
                           maxLength: 1000000,
                           hint: "Enter Salary (month)",
                           keyboardType: TextInputType.number,
@@ -690,12 +957,15 @@ class _CreateJobState extends State<CreateJob> {
                           ],
                         ),
 
-                        GlobalMethod.textTitle(label: 'Job Deadline Date (dd/mm/yyyy):'),
-                        GlobalMethod.dateTextFormField(
+                        _textTitles(label: 'Job Deadline Date (dd/mm/yyyy):'),
+                        _textFormFieldDate(
                           valueKey: "Post",
                           controller: _deadlineController,
                           enabled: false,
-                          onTap: _pickDateDialog,
+                          fct: () {
+                            _pickDateDialog();
+                          },
+
                           hint: "Select Deadline Date",
                         ),
                       ],
@@ -705,41 +975,41 @@ class _CreateJobState extends State<CreateJob> {
                   const SizedBox(height: 30),
                   Center(
                     child:
-                        _isLoading
-                            ? CircularProgressIndicator()
-                            : MaterialButton(
-                              onPressed: () {
-                                _onSubmit();
-                              },
-                              color: Color(0xff689f77),
-                              elevation: 8,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(13),
-                              ),
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 40,
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Text(
-                                      buttonText,
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 25,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 9),
-                                    Icon(
-                                      Icons.upload_file,
-                                      color: Colors.white,
-                                    ),
-                                  ],
-                                ),
+                    _isLoading
+                        ? CircularProgressIndicator()
+                        : MaterialButton(
+                      onPressed: () {
+                        _onSubmit();
+                      },
+                      color: Color(0xff689f77),
+                      elevation: 8,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(13),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 40,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              buttonText,
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 25,
                               ),
                             ),
+                            const SizedBox(width: 9),
+                            Icon(
+                              Icons.upload_file,
+                              color: Colors.white,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   ),
                   const SizedBox(height: 30),
                 ],
