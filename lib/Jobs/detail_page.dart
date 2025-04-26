@@ -30,18 +30,10 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
   }
 
   Future<void> _checkPermissionsAndLaunchAR(BuildContext context) async {
-    final cameraStatus = await Permission.camera.request();
-
-    if (cameraStatus.isGranted) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => const ARViewScreen()),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Camera permission is required for AR')),
-      );
-    }
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const ARViewScreen()),
+    );
   }
 
   @override
