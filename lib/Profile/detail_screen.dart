@@ -123,6 +123,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  final _formKey = GlobalKey<FormState>();
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -133,22 +135,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            if (profileImageBytes != null)
-              CircleAvatar(
-                radius: 50,
-                backgroundImage: MemoryImage(profileImageBytes!),
-              ),
-            const SizedBox(height: 16),
-            if (displayName != null)
-              Text(
-                displayName!,
-                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-              ),
-            if (email != null)
-              Text(
-                email!,
-                style: const TextStyle(fontSize: 16),
-              ),
+           Form(
+             key: _formKey,
+             child: Column(
+               children: [
+
+               ],
+             ),
+           ),
             const SizedBox(height: 24),
             TextButton.icon(
               onPressed: () => _logout(context),

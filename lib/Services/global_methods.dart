@@ -1,13 +1,8 @@
-import 'dart:convert';
-import 'dart:io';
-import 'package:path_provider/path_provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
 class GlobalMethod {
-
 
 
   static String formatDateWithSuperscript(dynamic input) {
@@ -118,13 +113,5 @@ class GlobalMethod {
         );
       },
     );
-  }
-
-  static Future<File> convertBase64ToFile(String base64Str, String fileName) async {
-    final bytes = base64Decode(base64Str);
-    final dir = await getTemporaryDirectory();
-    final file = File('${dir.path}/$fileName');
-    await file.writeAsBytes(bytes);
-    return file;
   }
 }

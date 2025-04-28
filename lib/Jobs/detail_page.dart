@@ -34,6 +34,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
       context,
       MaterialPageRoute(builder: (_) => const ARViewScreen()),
     );
+
   }
 
   @override
