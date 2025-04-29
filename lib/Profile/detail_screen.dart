@@ -147,10 +147,39 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  void _logout(BuildContext context) async {
-    await _auth.signOut();
-    Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => UserState()));
+  void _logout(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: Colors.white,
+          title: const Text('Confirm Logout'),
+          content: const Text('Are you sure you want to log out?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(), // cancel
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+              ),
+              onPressed: () async {
+                Navigator.of(context).pop(); // close dialog
+                await _auth.signOut();
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (_) => const UserState()),
+                );
+              },
+              child: const Text('Logout', style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        );
+      },
+    );
   }
+
 
   void _showImagePicker() {
     showDialog(
