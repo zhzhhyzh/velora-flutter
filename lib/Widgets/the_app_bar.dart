@@ -19,7 +19,7 @@ class TheAppBar extends StatelessWidget implements PreferredSizeWidget {
         style: TextStyle(
           fontWeight: FontWeight.bold,
           fontSize: 30,
-          color: style == 2 ? const Color(0xFF689f77) : Colors.black,
+          color: style == 2 ? const Color(0xffffffff) : Colors.black,
         ),
       ),
       centerTitle: style != 1,
@@ -45,7 +45,7 @@ class TheAppBar extends StatelessWidget implements PreferredSizeWidget {
               ]
               : [],
       flexibleSpace: Container(
-        decoration: const BoxDecoration(color: Colors.white),
+        decoration:   style == 2 ? const BoxDecoration(color: Color(0xff689f77)): const BoxDecoration(color: Color(0xffffffff)),
       ),
       backgroundColor: Colors.transparent,
       elevation: 0,

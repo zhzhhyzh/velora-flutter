@@ -13,7 +13,7 @@ class UserState extends StatelessWidget {
       stream: FirebaseAuth.instance.authStateChanges(),
       builder: (ctx, userSnapshot) {
         if (userSnapshot.data == null) {
-          print('User isn\' logged in yet');
+          print('User isn\'t logged in yet');
           return Login();
         } else if (userSnapshot.hasData) {
           print('User is already logged in yet');

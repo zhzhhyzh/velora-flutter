@@ -1,49 +1,39 @@
-class Users {
-  late String? username;
-  late String? hp;
-  late String? email;
-  late String? password;
-  late String? imageUrl;
+class UserModel {
+  final String id;
+  final String name;
+  final String email;
+  final String phoneNumber;
+  final String position;
+  final String? userImage; // base64 encoded image
 
-  Users({
-    required this.username,
-    required this.hp,
-    required this.password,
+  UserModel({
+    required this.id,
+    required this.name,
     required this.email,
-    this.imageUrl,
+    required this.phoneNumber,
+    required this.position,
+    this.userImage,
   });
 
-  String? get getHp => hp;
-
-  String? get getUsername => username;
-
-  String? get getPassword => password;
-
-  String? get getEmail => email;
-
-  String? get getImageUrl => imageUrl;
-
-
-  set setUsername(String username) {
-    this.username = username;
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'name': name,
+      'email': email,
+      'phoneNumber': phoneNumber,
+      'position': position,
+      'userImage': userImage,
+    };
   }
 
-  set setHp(String hp) {
-    this.hp = hp;
-  }
-
-  set setPassword(String password) {
-    this.password = password;
-  }
-
-
-
-
-  set setEmail(String email) {
-    this.email = email;
-  }
-
-  set setImageUrl(String? url) {
-    imageUrl = url;
+  factory UserModel.fromMap(Map<String, dynamic> map) {
+    return UserModel(
+      id: map['id'],
+      name: map['name'],
+      email: map['email'],
+      phoneNumber: map['phoneNumber'],
+      position: map['position'],
+      userImage: map['userImage'],
+    );
   }
 }
