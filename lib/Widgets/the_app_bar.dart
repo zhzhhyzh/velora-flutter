@@ -31,7 +31,7 @@ class TheAppBar extends StatelessWidget implements PreferredSizeWidget {
               )
               : null,
       actions:
-          style == 2
+          style == 2 && content != 'About Velora'
               ? [
                 IconButton(
                   icon: const Icon(Icons.info_outline, color: Colors.black),

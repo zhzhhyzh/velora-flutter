@@ -207,16 +207,37 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                   FloatingActionButton(
                     heroTag: 'delete',
                     backgroundColor: Colors.red,
-                    onPressed: () async {
-                      await FirebaseFirestore.instance
-                          .collection('jobs')
-                          .doc(widget.job.id)
-                          .delete();
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Deleted successfully!')),
+                    onPressed: () {
+                      showDialog(
+                        context: context,
+                        builder: (ctx) => AlertDialog(
+                          backgroundColor: Colors.white,
+                          title: const Text("Confirm Deletion"),
+                          content: const Text("Are you sure you want to delete this job post?"),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.of(ctx).pop(),
+                              child: const Text("Cancel"),
+                            ),
+                            TextButton(
+                              onPressed: () async {
+                                Navigator.of(ctx).pop(); // Close the dialog
+                                await FirebaseFirestore.instance
+                                    .collection('jobs')
+                                    .doc(widget.job.id)
+                                    .delete();
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Deleted successfully!')),
+                                );
+                                Navigator.pop(context); // Return to previous screen
+                              },
+                              child: const Text("Delete", style: TextStyle(color: Colors.red)),
+                            ),
+                          ],
+                        ),
                       );
-                      Navigator.pop(context);
                     },
+
                     child: const Icon(Icons.remove_circle, color: Colors.white),
                   ),
                 ],
