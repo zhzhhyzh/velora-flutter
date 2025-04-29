@@ -132,12 +132,12 @@ class _LoginState extends State<Login> with TickerProviderStateMixin {
                           children: [
                             TextSpan(
                               text: "WELCOME TO ",
-                              style: TextStyle(color: Colors.black, fontSize: 30),
+                              style: TextStyle(color: Colors.white, fontSize: 30),
 
                             ),
                             TextSpan(
                               text: "VELORA",
-                              style: TextStyle(color: Color(0xFF689F77),  fontSize: 30),
+                              style: TextStyle(color: Color(0xFF689F77),fontWeight: FontWeight.bold,  fontSize: 30),
                             ),
                           ],
                         ),

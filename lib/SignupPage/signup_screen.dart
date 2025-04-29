@@ -10,6 +10,8 @@ import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 import 'package:velora2/Services/global_methods.dart';
 
+import '../Services/global_dropdown.dart';
+
 class SignUp extends StatefulWidget {
   const SignUp({super.key});
 
@@ -40,18 +42,7 @@ class _SignUpState extends State<SignUp> with TickerProviderStateMixin {
   bool _obscureText2 = true;
   bool _isloading = false;
   String? _selectedPosition;
-  final List<String> _positions = [
-    'Student',
-    'UI Designer',
-    'UX Designer',
-    'Product Designer',
-    'Graphic Designer',
-    'Freelancer',
-    'Frontend Developer',
-    'Backend Developer',
-    'Project Manager',
-    'Other',
-  ];
+
 
   @override
   void dispose() {
@@ -274,7 +265,7 @@ class _SignUpState extends State<SignUp> with TickerProviderStateMixin {
                                   children: [
                                     TextSpan(
                                       text: "WELCOME TO ",
-                                      style: TextStyle(color: Colors.black, fontSize: 30),
+                                      style: TextStyle(color: Colors.white, fontSize: 30),
 
                                     ),
                                     TextSpan(
@@ -510,7 +501,7 @@ class _SignUpState extends State<SignUp> with TickerProviderStateMixin {
                               ),
                             ),
                             items:
-                                _positions.map((position) {
+                                GlobalDD.positions.map((position) {
                                   return DropdownMenuItem<String>(
                                     value: position,
                                     child: Text(position),

@@ -31,5 +31,18 @@ class GlobalDD{
     'India': ['Maharashtra', 'Karnataka', 'Delhi', 'Tamil Nadu'],
   };
 
+  static final List<String> positions = [
+    'Student',
+    'UI Designer',
+    'UX Designer',
+    'Product Designer',
+    'Graphic Designer',
+    'Freelancer',
+    'Frontend Developer',
+    'Backend Developer',
+    'Project Manager',
+    'Other',
+  ];
+
 
 }

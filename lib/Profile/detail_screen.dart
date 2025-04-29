@@ -1,9 +1,14 @@
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/material.dart';
 import 'dart:convert';
+import 'dart:io';
 import 'dart:typed_data';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:image_cropper/image_cropper.dart';
+import 'package:image_picker/image_picker.dart';
 
+import '../Services/global_dropdown.dart';
 import '../Widgets/bottom_nav_bar.dart';
 import '../Widgets/the_app_bar.dart';
 import '../user_state.dart';
@@ -19,9 +24,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  String? displayName;
-  String? email;
+  File? imageFile;
   Uint8List? profileImageBytes;
+  final _usernameCtrl = TextEditingController();
+  final _positionCtrl = TextEditingController();
+  final _phoneCtrl = TextEditingController();
+  final _emailCtrl = TextEditingController();
+  final _passwordCtrl = TextEditingController(); // optional if you want
 
   @override
   void initState() {
@@ -36,127 +45,316 @@ class _ProfileScreenState extends State<ProfileScreen> {
       if (doc.exists) {
         final data = doc.data();
         setState(() {
-          displayName = data?['displayName'];
-          email = data?['email'];
-          final base64Image = data?['profileImage'];
-          if (base64Image != null) {
-            profileImageBytes = decodeBase64Image(base64Image);
+          _usernameCtrl.text = data?['name'] ?? '';
+          _emailCtrl.text = data?['email'] ?? '';
+          _phoneCtrl.text = data?['phoneNumber'] ?? '';
+          _positionCtrl.text = data?['position'] ?? '';
+          if (data?['userImage'] != null) {
+            profileImageBytes = base64Decode(data!['userImage']);
           }
         });
       }
     }
   }
+  Widget _textTitles({required String label}) {
+    return  Text(
+        label,
+        style: TextStyle(
+          color: Colors.black,
+          fontSize: 20,
+          fontWeight: FontWeight.bold,
+        ),
+      );
 
-  Uint8List decodeBase64Image(String base64String) {
-    final RegExp regex = RegExp(r'data:image/[^;]+;base64,');
-    base64String = base64String.replaceAll(regex, '');
-    return base64.decode(base64String);
   }
 
-  void _logout(BuildContext context) {
+  Widget _textFormField({
+    required String valueKey,
+    required TextEditingController controller,
+    required bool enabled,
+    required Function fct,
+    required int maxLength,
+    required String hint,
+    List<TextInputFormatter>? inputFormatters,
+    TextInputType? keyboardType,
+  }) {
+    return Padding(
+      padding: EdgeInsets.all(5.0),
+      child: InkWell(
+        onTap: () {
+          fct();
+        },
+        child: TextFormField(
+          validator: (value) {
+            if (value!.isEmpty) {
+              return 'Value is missing';
+            }
+            return null;
+          },
+          controller: controller,
+          enabled: enabled,
+          key: ValueKey(valueKey),
+          style: const TextStyle(color: Colors.white),
+          maxLines: valueKey == 'JobDescription' ? 3 : 1,
+          maxLength: maxLength,
+          keyboardType: TextInputType.text,
+
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: TextStyle(color: Color(0xFFb9b9b9)),
+            filled: true,
+            fillColor: Colors.black54,
+            enabledBorder: UnderlineInputBorder(
+              borderSide: BorderSide(color: Colors.black),
+            ),
+            focusedBorder: UnderlineInputBorder(
+              borderSide: BorderSide(color: Colors.black),
+            ),
+            errorBorder: UnderlineInputBorder(
+              borderSide: BorderSide(color: Colors.red),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+  Future<void> _updateProfile() async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) return;
+
+      String? base64Image;
+      if (imageFile != null) {
+        final bytes = await imageFile!.readAsBytes();
+        base64Image = base64Encode(bytes);
+      }
+
+      await _firestore.collection('users').doc(user.uid).update({
+        'name': _usernameCtrl.text.trim(),
+        'email': _emailCtrl.text.trim(),
+        'phoneNumber': _phoneCtrl.text.trim(),
+        'position': _positionCtrl.text.trim(),
+        if (base64Image != null) 'userImage': base64Image,
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Profile updated successfully!')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error updating profile: $e')),
+      );
+    }
+  }
+
+  void _logout(BuildContext context) async {
+    await _auth.signOut();
+    Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => UserState()));
+  }
+
+  void _showImagePicker() {
     showDialog(
       context: context,
-      builder: (context) {
-        return AlertDialog(
-          backgroundColor: Colors.white,
-          title: Row(
-            children: const [
-              Padding(
-                padding: EdgeInsets.all(8.0),
-                child: Icon(Icons.logout, color: Colors.black, size: 36),
-              ),
-              Padding(
-                padding: EdgeInsets.all(8.0),
-                child: Text(
-                  'Logout',
-                  style: TextStyle(color: Colors.black, fontSize: 20),
-                ),
-              ),
-            ],
+      builder: (context) => AlertDialog(
+        title: const Text('Select Image Source'),
+        actions: [
+          TextButton.icon(
+            icon: const Icon(Icons.camera_alt),
+            label: const Text('Camera'),
+            onPressed: () => _pickImage(ImageSource.camera),
           ),
-          content: const Text(
-            'Do you want to Logout?',
-            style: TextStyle(color: Colors.black, fontSize: 20),
+          TextButton.icon(
+            icon: const Icon(Icons.photo_library),
+            label: const Text('Gallery'),
+            onPressed: () => _pickImage(ImageSource.gallery),
           ),
-          actions: [
-            ElevatedButton(
-              onPressed: () {
-                Navigator.of(context).pop(); // Close the dialog
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 10,
-                ),
-              ),
-              child: const Text(
-                'Cancel',
-                style: TextStyle(fontSize: 16, color: Colors.white),
-              ),
-            ),
-            const SizedBox(width: 20),
-            ElevatedButton(
-              onPressed: () async {
-                Navigator.of(context).pop(); // Close the dialog first
-                await _auth.signOut(); // Sign out
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (_) => UserState()),
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF689f77),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 10,
-                ),
-              ),
-              child: const Text(
-                'Confirm',
-                style: TextStyle(fontSize: 16, color: Colors.white),
-              ),
-            ),
-          ],
-        );
-      },
+        ],
+      ),
     );
   }
 
-  final _formKey = GlobalKey<FormState>();
+  Future<void> _pickImage(ImageSource source) async {
+    final pickedFile = await ImagePicker().pickImage(source: source);
+    if (pickedFile != null) {
+      final croppedFile = await ImageCropper().cropImage(sourcePath: pickedFile.path);
+      if (croppedFile != null) {
+        setState(() {
+          imageFile = File(croppedFile.path);
+        });
+      }
+    }
+    Navigator.pop(context);
+  }
+  InputDecoration _dropdownDecoration() {
+    return InputDecoration(
+      filled: true,
+      fillColor: Colors.black54,
+      hintStyle: const TextStyle(color: Color(0xFFb9b9b9)),
+      enabledBorder: const UnderlineInputBorder(
+        borderSide: BorderSide(color: Colors.black),
+      ),
+      focusedBorder: const UnderlineInputBorder(
+        borderSide: BorderSide(color: Colors.black),
+      ),
+      errorBorder: const UnderlineInputBorder(
+        borderSide: BorderSide(color: Colors.red),
+      ),
+    );
+  }
+  @override
+  void dispose() {
+    _usernameCtrl.dispose();
+    _positionCtrl.dispose();
+    _phoneCtrl.dispose();
+    _emailCtrl.dispose();
+    _passwordCtrl.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
+    Size size = MediaQuery.of(context).size;
     return Scaffold(
       bottomNavigationBar: BottomNavBar(currentIndex: 4),
       backgroundColor: Colors.white,
       appBar: TheAppBar(content: 'User Profile'),
-      body: Center(
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-           Form(
-             key: _formKey,
-             child: Column(
-               children: [
+            Center(
+              child: Stack(
+                children: [
+                  GestureDetector(
+                    onTap: _showImagePicker,
+                    child: CircleAvatar(
+                      radius: size.width * 0.15,
+                      backgroundColor: const Color(0xFF689F77),
+                      backgroundImage: imageFile != null
+                          ? FileImage(imageFile!)
+                          : (profileImageBytes != null ? MemoryImage(profileImageBytes!) : null) as ImageProvider?,
+                      child: (imageFile == null && profileImageBytes == null)
+                          ? const Icon(Icons.camera_alt, size: 50, color: Colors.white)
+                          : null,
+                    ),
+                  ),
+                  Positioned(
+                    bottom: 0,
+                    right: 0,
+                    child: Icon(
+                      Icons.edit,
+                      color: Colors.black,
+                      size: 24,
+                    ),
+                  ),
+                ],
+              ),
+            ),
 
-               ],
-             ),
-           ),
-            const SizedBox(height: 24),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+
+                const SizedBox(height: 20),
+                _textTitles(label: "Username"),
+                _textFormField(
+                  valueKey: "username",
+                  controller: _usernameCtrl,
+                  enabled: true,
+                  fct: () {},
+                  maxLength: 100,
+                  hint: "Enter Username",
+                ),
+                _textTitles(label: "Phone No."),
+                _textFormField(
+                  valueKey: "hpno",
+                  controller: _phoneCtrl,
+                  enabled: true,
+                  fct: () {},
+                  maxLength: 100,
+                  hint: "Enter Phone No.",
+                ),
+                _textTitles(label: "Email"),
+                _textFormField(
+                  valueKey: "email",
+                  controller: _emailCtrl,
+                  enabled: true,
+                  fct: () {},
+                  maxLength: 100,
+                  hint: "Enter Email",
+                ),
+                _textTitles(label: "Password"),
+                _textFormField(
+                  valueKey: "password",
+                  controller: _passwordCtrl,
+                  enabled: true,
+                  fct: () {},
+                  maxLength: 100,
+                  hint: "Enter Password",
+                ),
+                _textTitles(label: "Position"),
+                DropdownButtonFormField<String>(
+                  value: _positionCtrl.text.isNotEmpty ? _positionCtrl.text : null,
+                  decoration: _dropdownDecoration(),
+                  hint: const Text(
+                    "Select Position",
+                    style: TextStyle(color: Color(0xFFD9D9D9)),
+                  ),
+                  items: GlobalDD.positions.map((String position) {
+                    return DropdownMenuItem<String>(
+                      value: position,
+                      child: Text(position, style: const TextStyle(color: Colors.black)),
+                    );
+                  }).toList(),
+                  dropdownColor: Colors.white,
+                  iconEnabledColor: Colors.black,
+                  style: const TextStyle(color: Colors.black),
+                  onChanged: (String? value) {
+                    setState(() {
+                      _positionCtrl.text = value ?? '';
+                    });
+                  },
+                ),
+
+
+              ],
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: _updateProfile,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF689F77),
+                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+              ),
+              child: const Text('Save Changes', style: TextStyle(color: Colors.white,fontSize: 18)),
+            ),
+            const SizedBox(height: 12),
             TextButton.icon(
               onPressed: () => _logout(context),
-              icon: const Icon(Icons.lock, color: Color(0xFFFF0000)),
+              icon: const Icon(Icons.logout, color: Colors.red),
               label: const Text(
                 'Logout',
-                style: TextStyle(
-                  color: Color(0xFFFF0000),
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
               ),
             ),
           ],
+        )
+      ),
+    );
+  }
+
+  Widget _buildTextField(String label, TextEditingController controller, {TextInputType keyboardType = TextInputType.text}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: TextField(
+        controller: controller,
+        keyboardType: keyboardType,
+        decoration: InputDecoration(
+          labelText: label,
+          labelStyle: const TextStyle(color: Colors.black),
+          filled: true,
+          fillColor: Colors.black12,
+          border: const OutlineInputBorder(),
         ),
       ),
     );

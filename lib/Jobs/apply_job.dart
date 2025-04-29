@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import '../Services/email_sender.dart';
 import '../Widgets/the_app_bar.dart';
@@ -57,7 +58,72 @@ class _ApplyJobScreenState extends State<ApplyJobScreen> {
       print('Error picking file: $e');
     }
   }
+  Widget _textTitles({required String label}) {
+    return Padding(
+      padding: const EdgeInsets.all(5.0),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: Colors.black,
+          fontSize: 20,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
 
+
+
+  Widget _textFormField({
+    required String valueKey,
+    required TextEditingController controller,
+    required bool enabled,
+    required Function fct,
+    required int maxLength,
+    required String hint,
+    List<TextInputFormatter>? inputFormatters,
+    TextInputType? keyboardType,
+  }) {
+    return Padding(
+      padding: EdgeInsets.all(5.0),
+      child: InkWell(
+        onTap: () {
+          fct();
+        },
+        child: TextFormField(
+          validator: (value) {
+            if (value!.isEmpty) {
+              return 'Value is missing';
+            }
+            return null;
+          },
+          controller: controller,
+          enabled: enabled,
+          key: ValueKey(valueKey),
+          style: const TextStyle(color: Colors.white),
+          maxLines: valueKey == 'JobDescription' ? 3 : 1,
+          maxLength: maxLength,
+          keyboardType: TextInputType.text,
+
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: TextStyle(color: Color(0xFFb9b9b9)),
+            filled: true,
+            fillColor: Colors.black54,
+            enabledBorder: UnderlineInputBorder(
+              borderSide: BorderSide(color: Colors.black),
+            ),
+            focusedBorder: UnderlineInputBorder(
+              borderSide: BorderSide(color: Colors.black),
+            ),
+            errorBorder: UnderlineInputBorder(
+              borderSide: BorderSide(color: Colors.red),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
   Future<void> _submitApplication() async {
     if (!_formKey.currentState!.validate() || _resumeBytes == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -224,25 +290,21 @@ class _ApplyJobScreenState extends State<ApplyJobScreen> {
             Form(
               key: _formKey,
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildField('Name', _nameController),
-                  _buildField(
-                    'Phone No.',
-                    _phoneController,
-                    keyboardType: TextInputType.phone,
-                  ),
-                  _buildField(
-                    'Email',
-                    _emailController,
-                    required: true,
-                    keyboardType: TextInputType.emailAddress,
-                  ),
-                  _buildField(
-                    'Portfolio Link',
-                    _portfolioController,
-                    required: false,
-                    keyboardType: TextInputType.url,
-                  ),
+                  _textTitles(label: 'Name'),
+                  _textFormField(valueKey: "name", controller: _nameController, enabled: true, fct: (){}, maxLength: 100, hint: "Enter Name"),
+                  _textTitles(label: 'Phone No.'),
+                  _textFormField(valueKey: "hpno", controller: _phoneController, enabled: true, fct: (){}, maxLength: 20, hint: "Enter Phone No."),
+
+                  _textTitles(label: 'Email'),
+                  _textFormField(valueKey: "email", controller: _emailController, enabled: true, fct: (){}, maxLength: 100, hint: "Enter Email"),
+                  _textTitles(label: 'Portfolio Link'),
+                  _textFormField(valueKey: "link", controller: _portfolioController, enabled: true, fct: (){}, maxLength: 100, hint: "Enter Portfolio Link"),
+
+
+
+
                   const SizedBox(height: 12),
                   Align(
                     alignment: Alignment.centerLeft,
@@ -266,11 +328,10 @@ class _ApplyJobScreenState extends State<ApplyJobScreen> {
                       style: const TextStyle(fontSize: 12, color: Colors.green),
                     ),
                   const SizedBox(height: 16),
-                  _buildField(
-                    'Optional Message',
-                    _messageController,
-                    required: false,
-                  ),
+                  _textTitles(label: 'Optional Message'),
+                  _textFormField(valueKey: "opmsg", controller: _messageController, enabled: true, fct: (){}, maxLength: 1000, hint: "Enter Message"),
+
+
                 ],
               ),
             ),
