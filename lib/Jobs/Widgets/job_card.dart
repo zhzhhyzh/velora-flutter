@@ -8,12 +8,14 @@ class JobCard extends StatelessWidget {
   final Map<String, dynamic> data;
   final DocumentSnapshot doc;
   final bool isExpired;
+  final String? currentUserEmail;
 
   const JobCard({
     Key? key,
     required this.data,
     required this.doc,
     this.isExpired = false,
+    this.currentUserEmail,
   }) : super(key: key);
 
   @override
@@ -26,10 +28,21 @@ class JobCard extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       child: InkWell(
-        onTap: () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => JobDetailScreen(job: doc)),
-        ),
+        onTap: () {
+          final jobEmail = data['email'];
+          if (currentUserEmail != null && currentUserEmail == jobEmail) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => JobDetailScreen(job: doc)),
+            );
+          } else {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => JobDetailScreen(job: doc)),
+            );
+          }
+        },
+
         child: Container(
           decoration: BoxDecoration(
             color: isExpired ? Colors.red.shade100 : Colors.white,
