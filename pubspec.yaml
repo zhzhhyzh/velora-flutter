@@ -52,17 +52,13 @@ dependencies:
   file_selector: ^1.0.3
   flutter_dotenv: ^5.2.1
 
-  arcore_flutter_plugin: ^0.1.0
-  vector_math: ^2.1.4
-  permission_handler: ^11.0.1
+  ar_flutter_plugin_engine: ^1.0.1
 
   sqflite: ^2.3.0
   path_provider: ^2.1.2
   path: ^1.9.0
   file_picker: ^10.1.2
   shared_preferences: ^2.5.3
-  connectivity_plus: ^6.1.4
-  internet_connection_checker: ^1.0.0+1
 dev_dependencies:
   flutter_test:
     sdk: flutter

@@ -1,6 +1,9 @@
-import 'package:arcore_flutter_plugin/arcore_flutter_plugin.dart';
+import 'package:ar_flutter_plugin_engine/managers/ar_anchor_manager.dart';
+import 'package:ar_flutter_plugin_engine/managers/ar_location_manager.dart';
+import 'package:ar_flutter_plugin_engine/managers/ar_object_manager.dart';
+import 'package:ar_flutter_plugin_engine/managers/ar_session_manager.dart';
 import 'package:flutter/material.dart';
-import 'package:vector_math/vector_math_64.dart' as vector;
+import 'package:ar_flutter_plugin_engine/ar_flutter_plugin.dart';
 
 class ARViewScreen extends StatefulWidget {
   const ARViewScreen({Key? key}) : super(key: key);
@@ -10,37 +13,28 @@ class ARViewScreen extends StatefulWidget {
 }
 
 class _ARViewScreenState extends State<ARViewScreen> {
-  late ArCoreController arCoreController;
-
-  @override
-  void dispose() {
-    arCoreController.dispose();
-    super.dispose();
-  }
-
-  void _onArCoreViewCreated(ArCoreController controller) {
-    arCoreController = controller;
-    _addSphere();
-  }
-
-  void _addSphere() {
-    final material = ArCoreMaterial(color: Colors.blue);
-    final sphere = ArCoreSphere(materials: [material], radius: 0.1);
-    final node = ArCoreNode(
-      shape: sphere,
-      position: vector.Vector3(0, 0, -1.0),
-    );
-    arCoreController.addArCoreNode(node);
-  }
+  late ARSessionManager arSessionManager;
+  late ARObjectManager arObjectManager;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('AR View')),
-      body: ArCoreView(
-        onArCoreViewCreated: _onArCoreViewCreated,
-        enableTapRecognizer: true,
+      body: ARView(
+        onARViewCreated: onARViewCreated,
       ),
     );
+  }
+
+  void onARViewCreated(ARSessionManager sessionManager, ARObjectManager objectManager, ARAnchorManager anchorManager, ARLocationManager locationManager) {
+    arSessionManager = sessionManager;
+    arObjectManager = objectManager;
+    arSessionManager.onInitialize(
+      showFeaturePoints: false,
+      showPlanes: true,
+      customPlaneTexturePath: "assets/triangle.png",
+      showWorldOrigin: true,
+    );
+    arObjectManager.onInitialize();
   }
 }
