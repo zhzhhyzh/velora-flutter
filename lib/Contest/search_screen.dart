@@ -48,7 +48,7 @@ class _AllContestsScreenState extends State<AllContestsScreen> {
         });
       }
     } catch (e) {
-      print('Local DB error: $e');
+      Text('Local DB error: $e');
       if (mounted) setState(() => _isLoading = false);
     }
   }
@@ -57,7 +57,7 @@ class _AllContestsScreenState extends State<AllContestsScreen> {
     try {
       final snapshot = await FirebaseFirestore.instance.collection('contests').get();
       final contests = snapshot.docs.map((doc) => Contest.fromFirestore(doc)).toList();
-      print("Fetched ${contests.length} contests from Firebase");
+      Text("Fetched ${contests.length} contests from Firebase");
 
       await LocalDatabase.clearContests();
       for (final contest in contests) {
@@ -71,8 +71,8 @@ class _AllContestsScreenState extends State<AllContestsScreen> {
         });
       }
     } catch (e, st) {
-      print('Error fetching contests: $e');
-      print('Stacktrace: $st');
+      Text('Error fetching contests: $e');
+      Text('Stacktrace: $st');
       if (mounted) setState(() => _isLoading = false);
     }
   }
@@ -85,7 +85,9 @@ class _AllContestsScreenState extends State<AllContestsScreen> {
     return _contests.where((contest) {
       if (_searchQuery.isNotEmpty &&
           !(contest.title.toLowerCase().contains(_searchQuery) ||
-              contest.description.toLowerCase().contains(_searchQuery))) return false;
+              contest.description.toLowerCase().contains(_searchQuery))) {
+        return false;
+      }
       if (_selectedCategory != null && contest.category != _selectedCategory) return false;
       if (selectedTab == 'Past') return _isPast(contest);
       if (selectedTab == 'On Going') return _isOnGoing(contest);
