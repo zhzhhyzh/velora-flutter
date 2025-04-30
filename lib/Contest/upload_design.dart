@@ -1,11 +1,10 @@
-import 'dart:io';
 import 'dart:convert';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:file_picker/file_picker.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../Widgets/the_app_bar.dart';
-import '../Widgets/bottom_nav_bar.dart';
 
 class UploadDesignPage extends StatefulWidget {
   final String contestId;
@@ -20,25 +19,24 @@ class _UploadDesignPageState extends State<UploadDesignPage> {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _conceptController = TextEditingController();
-  File? _selectedFile;
-  String? _base64File;
+  List<XFile> _imageFiles = [];
   bool _isUploading = false;
 
-  Future<void> _pickFile() async {
-    final result = await FilePicker.platform.pickFiles(type: FileType.image);
-    if (result != null && result.files.single.path != null) {
-      final file = File(result.files.single.path!);
-      final bytes = await file.readAsBytes();
+  Future<void> _pickImages() async {
+    final picker = ImagePicker();
+    final images = await picker.pickMultiImage();
+    if (images != null && images.isNotEmpty) {
       setState(() {
-        _selectedFile = file;
-        _base64File = base64Encode(bytes);
+        _imageFiles = images;
       });
     }
   }
 
   Future<void> _uploadDesign() async {
-    if (!_formKey.currentState!.validate() || _base64File == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please complete all fields and select a file.')));
+    if (!_formKey.currentState!.validate() || _imageFiles.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please complete all fields and select images.')),
+      );
       return;
     }
 
@@ -48,19 +46,28 @@ class _UploadDesignPageState extends State<UploadDesignPage> {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) throw 'User not logged in';
 
-      final entryRef = FirebaseFirestore.instance
+      final docRef = FirebaseFirestore.instance
           .collection('contests')
           .doc(widget.contestId)
           .collection('entries')
           .doc();
 
-      await entryRef.set({
+      List<String> imageBase64 = [];
+      for (var img in _imageFiles) {
+        final bytes = await File(img.path).readAsBytes();
+        imageBase64.add(base64Encode(bytes));
+      }
+
+      await docRef.set({
         'title': _titleController.text.trim(),
         'concept': _conceptController.text.trim(),
-        'fileBase64': _base64File,
         'createdBy': user.email,
         'createdAt': Timestamp.now(),
         'votes': [],
+        'images': imageBase64,
+        'coverImage': imageBase64.first,
+        'id': docRef.id,
+        'contestId': widget.contestId,
       });
 
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Design uploaded successfully!')));
@@ -82,9 +89,8 @@ class _UploadDesignPageState extends State<UploadDesignPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: const TheAppBar(content: 'Upload Design'),
-      bottomNavigationBar: BottomNavBar(currentIndex: 3),
       backgroundColor: Colors.white,
+      appBar: TheAppBar(content: "Upload Design", style: 2),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: _isUploading
@@ -94,7 +100,7 @@ class _UploadDesignPageState extends State<UploadDesignPage> {
           child: Column(
             children: [
               GestureDetector(
-                onTap: _pickFile,
+                onTap: _pickImages,
                 child: Container(
                   height: 180,
                   width: double.infinity,
@@ -102,23 +108,69 @@ class _UploadDesignPageState extends State<UploadDesignPage> {
                     color: Colors.grey.shade300,
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: _selectedFile != null
-                      ? Image.file(_selectedFile!, fit: BoxFit.cover)
-                      : const Icon(Icons.add_photo_alternate, size: 50),
+                  child: _imageFiles.isNotEmpty
+                      ? ListView(
+                    scrollDirection: Axis.horizontal,
+                    children: _imageFiles
+                        .map((img) => Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Image.file(File(img.path), width: 100, fit: BoxFit.cover),
+                    ))
+                        .toList(),
+                  )
+                      : const Center(child: Icon(Icons.add_photo_alternate, size: 50)),
                 ),
               ),
               const SizedBox(height: 16),
-              TextFormField(
-                controller: _titleController,
-                decoration: const InputDecoration(labelText: 'Design Title'),
-                validator: (value) => value == null || value.isEmpty ? 'Required' : null,
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text("Design Title", style: TextStyle(fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 4),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.black45,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    child: TextFormField(
+                      controller: _titleController,
+                      style: const TextStyle(color: Colors.white),
+                      decoration: const InputDecoration(
+                        hintText: 'Enter design title',
+                        border: InputBorder.none,
+                        hintStyle: TextStyle(color: Colors.white70),
+                      ),
+                      validator: (value) => value == null || value.isEmpty ? 'Required' : null,
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 16),
-              TextFormField(
-                controller: _conceptController,
-                maxLines: 4,
-                decoration: const InputDecoration(labelText: 'Design Concept'),
-                validator: (value) => value == null || value.isEmpty ? 'Required' : null,
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text("Design Concept", style: TextStyle(fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 4),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.black45,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    child: TextFormField(
+                      controller: _conceptController,
+                      maxLines: 4,
+                      style: const TextStyle(color: Colors.white),
+                      decoration: const InputDecoration(
+                        hintText: 'Enter design concept',
+                        border: InputBorder.none,
+                        hintStyle: TextStyle(color: Colors.white70),
+                      ),
+                      validator: (value) => value == null || value.isEmpty ? 'Required' : null,
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 24),
               ElevatedButton(
