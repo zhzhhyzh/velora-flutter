@@ -52,7 +52,7 @@ class _ContestDetailPageState extends State<ContestDetailPage> {
         _isLoading = false;
       });
     } catch (e) {
-      print('Error fetching entries: $e');
+      Text('Error fetching entries: $e');
     }
   }
 
