@@ -8,7 +8,6 @@ import '../Jobs/create_job.dart';
 import '../Services/ar_view_screen.dart';
 import '../Services/global_methods.dart';
 import '../Widgets/the_app_bar.dart';
-import 'package:permission_handler/permission_handler.dart';
 
 class JobDetailScreen extends StatefulWidget {
   final DocumentSnapshot job;
@@ -30,11 +29,21 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
   }
 
   Future<void> _checkPermissionsAndLaunchAR(BuildContext context) async {
+    final imageBase64 = data['arImage'];
+    if (imageBase64 == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("No image available for overlay.")),
+      );
+      return;
+    }
+
+    final imageBytes = base64Decode(imageBase64);
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => const ARViewScreen()),
+      MaterialPageRoute(
+        builder: (_) => PanoramaViewerScreen(imageBytes: imageBytes),
+      ),
     );
-
   }
 
   @override
@@ -118,11 +127,13 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                               ],
                             ),
                           ),
-                          IconButton(
+                          (data['arImage'] != null && data['arImage'].toString().isNotEmpty)
+                              ? IconButton(
                             icon: const Icon(Icons.view_in_ar),
-                            onPressed:
-                                () => _checkPermissionsAndLaunchAR(context),
-                          ),
+                            onPressed: () => _checkPermissionsAndLaunchAR(context),
+                          )
+                              : const SizedBox.shrink()
+
                         ],
                       ),
                       const SizedBox(height: 4),
