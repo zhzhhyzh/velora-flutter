@@ -3,9 +3,6 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:velora2/Widgets/bottom_nav_bar.dart';
 import 'package:velora2/Widgets/the_app_bar.dart';
-import 'package:velora2/config/theme.dart';
-import 'package:velora2/user_state.dart';
-import 'package:velora2/Services/global_methods.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
