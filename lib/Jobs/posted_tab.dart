@@ -30,7 +30,6 @@ class PostedTab extends StatelessWidget {
           .snapshots(),
       builder: (context, snapshot) {
         if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
-
         final jobs = snapshot.data!.docs.where((doc) {
           final data = doc.data() as Map<String, dynamic>;
           final matchesSearch = searchQuery.isEmpty || (data['jobTitle'] ?? '').toLowerCase().contains(searchQuery);
@@ -39,6 +38,7 @@ class PostedTab extends StatelessWidget {
           final matchesAca = minAcaFilter == null || minAcaFilter == data['minAca'];
           return matchesSearch && matchesCategory && matchesType && matchesAca;
         }).toList();
+        if (jobs.isEmpty)  return const Center(child: Text('No Posted jobs.'));
 
         return ListView.builder(
           itemCount: jobs.length,

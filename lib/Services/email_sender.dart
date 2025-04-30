@@ -6,8 +6,8 @@ class EmailSender {
 
   final String apiKey = dotenv.env['BREVO_API_KEY']!;
 
-  final String senderEmail = 'yeohzh-wp22@student.tarc.edu.my';
-  final String senderName = 'ZHE HENG YEOH';
+  final String senderEmail = 'velora@support.com';
+  final String senderName = 'VELORA';
 
   Future<void> sendEmail({
     required String toEmail,

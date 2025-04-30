@@ -979,7 +979,33 @@ class _CreateJobState extends State<CreateJob> {
                         ? CircularProgressIndicator()
                         : MaterialButton(
                       onPressed: () {
-                        _onSubmit();
+                        if(_formKey.currentState!.validate()){
+                          showDialog(
+                            context: context,
+                            builder: (ctx) => AlertDialog(
+                              backgroundColor: Colors.white,
+                              title: Text(widget.jobData != null ? 'Confirm Update' : 'Confirm Create'),
+                              content: Text(widget.jobData != null
+                                  ? 'Are you sure you want to update this job post?'
+                                  : 'Are you sure you want to create this job post?'),
+                              actions: [
+                                TextButton(
+                                  child: const Text('Cancel'),
+                                  onPressed: () => Navigator.of(ctx).pop(),
+                                ),
+                                ElevatedButton(
+                                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xff689f77)),
+                                  child: const Text('Confirm', style: TextStyle(color: Colors.white)),
+                                  onPressed: () {
+                                    Navigator.of(ctx).pop();
+                                    _onSubmit();
+                                  },
+                                ),
+                              ],
+                            ),
+                          );
+                        }
+
                       },
                       color: Color(0xff689f77),
                       elevation: 8,

@@ -1,19 +1,22 @@
 import 'dart:convert';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/material.dart';
-import '../detail_page.dart';
+import 'dart:ui';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
+
+import '../detail_page.dart';
 
 class JobCard extends StatelessWidget {
   final Map<String, dynamic> data;
-  final DocumentSnapshot doc;
+  final DocumentSnapshot? doc; // <-- nullable
   final bool isExpired;
   final String? currentUserEmail;
 
   const JobCard({
     Key? key,
     required this.data,
-    required this.doc,
+    this.doc,
     this.isExpired = false,
     this.currentUserEmail,
   }) : super(key: key);
@@ -29,20 +32,17 @@ class JobCard extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       child: InkWell(
         onTap: () {
-          final jobEmail = data['email'];
-          if (currentUserEmail != null && currentUserEmail == jobEmail) {
+          if (doc != null) {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => JobDetailScreen(job: doc)),
+              MaterialPageRoute(builder: (_) => JobDetailScreen(job: doc!)),
             );
           } else {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => JobDetailScreen(job: doc)),
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text("This job is available offline only.")),
             );
           }
         },
-
         child: Container(
           decoration: BoxDecoration(
             color: isExpired ? Colors.red.shade100 : Colors.white,
@@ -65,10 +65,7 @@ class JobCard extends StatelessWidget {
                       ? Image.memory(
                     base64Decode(data['jobImage']),
                     fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => const Icon(
-                      Icons.image_not_supported,
-                      color: Colors.grey,
-                    ),
+                    errorBuilder: (_, __, ___) => const Icon(Icons.image_not_supported, color: Colors.grey),
                   )
                       : const Icon(Icons.image, color: Colors.grey),
                 ),

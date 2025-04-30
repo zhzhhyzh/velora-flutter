@@ -41,12 +41,13 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
   Widget build(BuildContext context) {
     final isOwner = user?.email == data['email'];
 
-    final deadlineDate =
-        (data['deadline'] is Timestamp)
-            ? (data['deadline'] as Timestamp).toDate()
-            : DateTime.tryParse(data['deadline'] ?? '');
-    final isExpired =
-        deadlineDate != null && DateTime.now().isAfter(deadlineDate);
+    
+    final DateTime now = DateTime.now();
+    final DateTime? deadline = (data['deadlineTimestamp'] is Timestamp)
+        ? (data['deadlineTimestamp'] as Timestamp).toDate()
+        : (data['deadline'] is String ? DateTime.tryParse(data['deadline']) : null);
+
+    final bool isExpired = deadline != null && now.isAfter(deadline);
 
     return Scaffold(
       appBar: TheAppBar(content: data['comName'] ?? 'Job Detail', style: 2),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../Services/global_dropdown.dart';
 import 'applied_tab.dart';
+import 'create_job.dart';
 import 'explore_tab.dart';
 import 'posted_tab.dart';
 import '../Widgets/bottom_nav_bar.dart';
@@ -30,7 +31,47 @@ class _AllJobsScreenState extends State<AllJobsScreen> {
         children: [
           _buildSearchAndFilterBar(),
           _buildTabButtons(),
+          Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 8.0,
+              vertical: 8.0,
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  "Your Post",
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
+                ),
+                ElevatedButton(
+                  onPressed:
+                      () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => CreateJob()),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF689f77),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 12,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text(
+                    'Add Post',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
           Expanded(child: _buildTabContent()),
+
         ],
       ),
     );

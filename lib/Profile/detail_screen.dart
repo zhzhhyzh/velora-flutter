@@ -350,7 +350,32 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               const SizedBox(height: 20),
               ElevatedButton(
-                onPressed: _updateProfile,
+                onPressed: () async {
+                  final confirm = await showDialog<bool>(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      backgroundColor: Colors.white,
+                      title: const Text('Confirm Save'),
+                      content: const Text('Do you want to save these changes?'),
+                      actions: [
+                        TextButton(
+                          child: const Text('Cancel'),
+                          onPressed: () => Navigator.pop(context, false),
+                        ),
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF689F77)),
+                          onPressed: () => Navigator.pop(context, true),
+                          child: const Text('Save', style: TextStyle(color: Colors.white)),
+                        ),
+                      ],
+                    ),
+                  );
+
+                  if (confirm == true) {
+                    _updateProfile();
+                  }
+                },
+
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF689F77),
                   padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),

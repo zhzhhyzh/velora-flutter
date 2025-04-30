@@ -328,7 +328,7 @@ class _ApplyJobScreenState extends State<ApplyJobScreen> {
                       style: const TextStyle(fontSize: 12, color: Colors.green),
                     ),
                   const SizedBox(height: 16),
-                  _textTitles(label: 'Optional Message'),
+                  _textTitles(label: 'Message'),
                   _textFormField(valueKey: "opmsg", controller: _messageController, enabled: true, fct: (){}, maxLength: 1000, hint: "Enter Message"),
 
 
@@ -337,7 +337,37 @@ class _ApplyJobScreenState extends State<ApplyJobScreen> {
             ),
             const SizedBox(height: 30),
             ElevatedButton(
-              onPressed: _isSubmitting ? null : _submitApplication,
+              onPressed: _isSubmitting
+                  ? null
+                  : () {
+                if(_formKey.currentState!.validate()){
+                  showDialog(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      backgroundColor: Colors.white,
+                      title: const Text("Confirm Submission"),
+                      content: const Text("Are you sure you want to submit your application?"),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          child: const Text("Cancel"),
+                        ),
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF689f77),
+                          ),
+                          onPressed: () {
+                            Navigator.of(context).pop(); // Close the dialog
+                            _submitApplication(); // Proceed with submission
+                          },
+                          child: const Text("Confirm", style: TextStyle(color: Colors.white)),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+              },
+
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF689f77),
                 minimumSize: const Size.fromHeight(50),
