@@ -1,20 +1,17 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
-import 'package:panorama/panorama.dart';
-import '../Widgets/the_app_bar.dart';
+import 'package:panorama_viewer/panorama_viewer.dart';
 
-class PanoramaViewerScreen extends StatelessWidget {
+class PanoramaImageScreen extends StatelessWidget {
   final Uint8List imageBytes;
 
-  const PanoramaViewerScreen({super.key, required this.imageBytes});
+  const PanoramaImageScreen({Key? key, required this.imageBytes}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: TheAppBar(content: "360° Viewer", style: 2),
-      body: Panorama(
-        animSpeed: 1.0,
-        sensorControl: SensorControl.Orientation,
+      appBar: AppBar(title: const Text('360° View')),
+      body: PanoramaViewer(
         child: Image.memory(imageBytes),
       ),
     );

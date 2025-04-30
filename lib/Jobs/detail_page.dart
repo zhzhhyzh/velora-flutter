@@ -41,7 +41,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => PanoramaViewerScreen(imageBytes: imageBytes),
+        builder: (_) => PanoramaImageScreen(imageBytes: imageBytes),
       ),
     );
   }

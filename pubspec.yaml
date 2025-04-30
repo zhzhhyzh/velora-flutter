@@ -57,8 +57,8 @@ dependencies:
   path: ^1.9.0
   file_picker: ^10.1.2
   shared_preferences: ^2.5.3
-  panorama: ^0.4.1
   panorama_viewer: ^2.0.4
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -85,6 +85,7 @@ flutter:
   assets:
     - assets/images/
     - .env
+
 
   fonts:
     - family: Signatra
