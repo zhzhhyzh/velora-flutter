@@ -16,9 +16,7 @@ Future<void> main() async {
 class MyApp extends StatelessWidget {
 
   final Future<FirebaseApp> _initialization = Firebase.initializeApp();
-  bool _iconBool = false;
-  IconData _iconLight = Icons.wb_sunny;
-  IconData _iconDark = Icons.nights_stay;
+
 
   @override
   Widget build(BuildContext context) {
@@ -63,7 +61,6 @@ class MyApp extends StatelessWidget {
 
           theme: ThemeData(
             scaffoldBackgroundColor: Colors.black,
-            primarySwatch: Colors.blue,
 
           ),
           home: UserState(),

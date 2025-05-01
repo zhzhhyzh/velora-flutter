@@ -7,7 +7,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:velora2/Models/users.dart';
 
+import '../Services/LocalDatabase/users.dart';
 import '../Services/global_dropdown.dart';
 import '../Widgets/bottom_nav_bar.dart';
 import '../Widgets/the_app_bar.dart';
@@ -31,31 +33,84 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final _phoneCtrl = TextEditingController();
   final _emailCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController(); // optional if you want
+  List<UserModel> _users = [];
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _loadUserData();
+    _loadLocalusers();
+    _fetchAndSyncCloudusers();
   }
 
-  Future<void> _loadUserData() async {
-    final user = _auth.currentUser;
-    if (user != null) {
-      final doc = await _firestore.collection('users').doc(user.uid).get();
-      if (doc.exists) {
-        final data = doc.data();
-        setState(() {
-          _usernameCtrl.text = data?['name'] ?? '';
-          _emailCtrl.text = data?['email'] ?? '';
-          _phoneCtrl.text = data?['phoneNumber'] ?? '';
-          _positionCtrl.text = data?['position'] ?? '';
-          if (data?['userImage'] != null) {
-            profileImageBytes = base64Decode(data!['userImage']);
-          }
-        });
+  Future<void> _loadLocalusers() async {
+    try {
+      final user = _auth.currentUser;
+      if (user != null) {
+        final localUser = await LocalDatabase.getUserById(user.uid);
+        if (localUser != null && mounted) {
+          setState(() {
+            _usernameCtrl.text = localUser.name;
+            _emailCtrl.text = localUser.email;
+            _phoneCtrl.text = localUser.phoneNumber;
+            _positionCtrl.text = localUser.position;
+            if (localUser.userImage != null) {
+              profileImageBytes = base64Decode(localUser.userImage!);
+            }
+            _isLoading = false;
+          });
+        }
       }
+    } catch (e) {
+      debugPrint('Local DB error: $e');
+      if (mounted) setState(() => _isLoading = false);
     }
   }
+
+
+  Future<void> _fetchAndSyncCloudusers() async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) return;
+
+      final doc = await _firestore.collection('users').doc(user.uid).get();
+      if (!doc.exists) return;
+
+      final data = doc.data();
+      if (data != null) {
+        final userModel = UserModel(
+          id: user.uid,
+          name: data['name'] ?? '',
+          email: data['email'] ?? '',
+          phoneNumber: data['phoneNumber'] ?? '',
+          position: data['position'] ?? '',
+          userImage: data['userImage'], // base64
+        );
+
+        // Update UI
+        setState(() {
+          _usernameCtrl.text = userModel.name;
+          _emailCtrl.text = userModel.email;
+          _phoneCtrl.text = userModel.phoneNumber;
+          _positionCtrl.text = userModel.position;
+          if (userModel.userImage != null) {
+            profileImageBytes = base64Decode(userModel.userImage!);
+          }
+          _isLoading = false;
+        });
+
+        // Sync to local DB
+        await LocalDatabase.clearUsers();
+        await LocalDatabase.insertUser(userModel);
+      }
+    } catch (e, st) {
+      debugPrint('Error fetching users: $e\n$st');
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+
+
   Widget _textTitles({required String label}) {
     return  Text(
       label,
@@ -332,7 +387,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     items: GlobalDD.positions.map((String position) {
                       return DropdownMenuItem<String>(
                         value: position,
-                        child: Text(position, style: const TextStyle(color: Colors.black)),
+                        child: Text(position, style: const TextStyle(color: Colors.white)),
                       );
                     }).toList(),
                     dropdownColor: Colors.white,
@@ -414,3 +469,4 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 }
+

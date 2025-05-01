@@ -7,7 +7,7 @@ import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import '../models/contest.dart';
-import '../Services/local_database.dart';
+import '../Services/LocalDatabase/contests.dart';
 import '../Widgets/the_app_bar.dart';
 
 class CreateContestPage extends StatefulWidget {

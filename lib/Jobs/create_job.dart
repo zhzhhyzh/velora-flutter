@@ -12,8 +12,9 @@ import 'package:uuid/uuid.dart';
 import 'package:velora2/Services/global_methods.dart';
 import 'package:velora2/Services/global_dropdown.dart';
 import 'package:velora2/Widgets/the_app_bar.dart';
+import '../Services/LocalDatabase/jobs.dart'; // if not imported already
+import '../models/jobs.dart';
 
-import '../Services/global_variables.dart';
 import 'package:path_provider/path_provider.dart';
 
 Future<File> _convertBase64ToFile(String base64Str, String fileName) async {
@@ -546,14 +547,31 @@ class _CreateJobState extends State<CreateJob> {
         'updatedAt': Timestamp.now(),
       };
 
+      final jobModel = JobModel(
+        id: jobId,
+        jobTitle: _jobTitleController.text,
+        comName: _comNameController.text,
+        jobLocation: '${_stateController.text}, ${_countryController.text}',
+        jobCat: _jobCatController.text,
+        jobImage: base64Image,
+        deadline: dDate,
+      );
+
+
+
       if (widget.jobData != null) {
         await jobRef.update(jobData);
         Fluttertoast.showToast(msg: 'Job updated successfully');
       } else {
         jobData['createdAt'] = Timestamp.now();
+        await LocalDatabase.insertJob(jobModel);
+
         await jobRef.set(jobData);
+
         Fluttertoast.showToast(msg: 'Job created successfully');
       }
+
+
 
       Navigator.pop(context);
     } catch (e) {

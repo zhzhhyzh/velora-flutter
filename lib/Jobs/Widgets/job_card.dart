@@ -29,7 +29,7 @@ class JobCard extends StatelessWidget {
     ].where((e) => e != null && e.trim().isNotEmpty).join(', ');
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
       child: InkWell(
         onTap: () {
           if (doc != null) {
@@ -54,7 +54,7 @@ class JobCard extends StatelessWidget {
               Container(
                 width: 60,
                 height: 60,
-                margin: const EdgeInsets.all(10),
+                margin: const EdgeInsets.all(5),
                 decoration: BoxDecoration(
                   color: Colors.orange.shade700,
                   borderRadius: BorderRadius.circular(8),
@@ -91,7 +91,10 @@ class JobCard extends StatelessWidget {
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
+
                     ],
                   ),
                 ),

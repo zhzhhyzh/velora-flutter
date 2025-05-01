@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 import '../models/contest.dart';
-import '../Services/local_database.dart';
+import '../Services/LocalDatabase/contests.dart';
 import '../Widgets/bottom_nav_bar.dart';
 import '../Widgets/the_app_bar.dart';
 import 'contest_detail.dart';
