@@ -306,7 +306,7 @@ class _AllContestsScreenState extends State<AllContestsScreen> {
 
           // Header + Create Contest
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
