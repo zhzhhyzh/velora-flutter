@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import '../Services/email_sender.dart';
+import '../Services/notification_handler.dart';
 import '../Widgets/the_app_bar.dart';
 
 class ApplyJobScreen extends StatefulWidget {
@@ -58,6 +59,7 @@ class _ApplyJobScreenState extends State<ApplyJobScreen> {
       print('Error picking file: $e');
     }
   }
+
   Widget _textTitles({required String label}) {
     return Padding(
       padding: const EdgeInsets.all(5.0),
@@ -71,7 +73,6 @@ class _ApplyJobScreenState extends State<ApplyJobScreen> {
       ),
     );
   }
-
 
 
   Widget _textFormField({
@@ -124,6 +125,7 @@ class _ApplyJobScreenState extends State<ApplyJobScreen> {
       ),
     );
   }
+
   Future<void> _submitApplication() async {
     if (!_formKey.currentState!.validate() || _resumeBytes == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -157,10 +159,13 @@ class _ApplyJobScreenState extends State<ApplyJobScreen> {
         'appliedAt': Timestamp.now(),
       });
       final emailSender = EmailSender();
+      final notificationHandler = NotificationHandler();
+
+      final recruiterEmail = jobData['email'];
 
       try {
         await emailSender.sendEmail(
-          toEmail: jobData['email'],
+          toEmail: recruiterEmail,
           toName: 'Recruiter',
           subject: 'New Job Application - ${jobData['jobTitle']}',
           htmlContent: '''
@@ -182,6 +187,27 @@ class _ApplyJobScreenState extends State<ApplyJobScreen> {
         ).showSnackBar(SnackBar(content: Text('Could not send email: $e')));
       }
 
+
+
+      final notificationMessage = '''
+${_nameController.text} applied for "${jobData['jobTitle']}" at ${jobData['comName']}.
+Phone: ${_phoneController.text}
+Email: ${_emailController.text}
+''';
+
+      try {
+        await notificationHandler.sendNotification(
+          theEmail: recruiterEmail,
+          title: 'New Job Application',
+          message: notificationMessage,
+        );
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to send notification: $e')),
+        );
+      }
+
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Application submitted successfully!')),
       );
@@ -196,12 +222,11 @@ class _ApplyJobScreenState extends State<ApplyJobScreen> {
     }
   }
 
-  Widget _buildField(
-    String label,
-    TextEditingController controller, {
-    bool required = true,
-    TextInputType? keyboardType,
-  }) {
+  Widget _buildField(String label,
+      TextEditingController controller, {
+        bool required = true,
+        TextInputType? keyboardType,
+      }) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Column(
@@ -212,10 +237,10 @@ class _ApplyJobScreenState extends State<ApplyJobScreen> {
           TextFormField(
             controller: controller,
             validator:
-                required
-                    ? (value) =>
-                        value == null || value.isEmpty ? 'Required' : null
-                    : null,
+            required
+                ? (value) =>
+            value == null || value.isEmpty ? 'Required' : null
+                : null,
             keyboardType: keyboardType,
             decoration: InputDecoration(
               contentPadding: const EdgeInsets.symmetric(
@@ -278,7 +303,8 @@ class _ApplyJobScreenState extends State<ApplyJobScreen> {
                       ),
                       Text('JOB TYPE: ${jobData['jobType']}'),
                       Text(
-                        'DATE POSTED: ${_formatTimestamp(jobData['createdAt'])}',
+                        'DATE POSTED: ${_formatTimestamp(
+                            jobData['createdAt'])}',
                       ),
                     ],
                   ),
@@ -293,16 +319,34 @@ class _ApplyJobScreenState extends State<ApplyJobScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _textTitles(label: 'Name'),
-                  _textFormField(valueKey: "name", controller: _nameController, enabled: true, fct: (){}, maxLength: 100, hint: "Enter Name"),
+                  _textFormField(valueKey: "name",
+                      controller: _nameController,
+                      enabled: true,
+                      fct: () {},
+                      maxLength: 100,
+                      hint: "Enter Name"),
                   _textTitles(label: 'Phone No.'),
-                  _textFormField(valueKey: "hpno", controller: _phoneController, enabled: true, fct: (){}, maxLength: 20, hint: "Enter Phone No."),
+                  _textFormField(valueKey: "hpno",
+                      controller: _phoneController,
+                      enabled: true,
+                      fct: () {},
+                      maxLength: 20,
+                      hint: "Enter Phone No."),
 
                   _textTitles(label: 'Email'),
-                  _textFormField(valueKey: "email", controller: _emailController, enabled: true, fct: (){}, maxLength: 100, hint: "Enter Email"),
+                  _textFormField(valueKey: "email",
+                      controller: _emailController,
+                      enabled: true,
+                      fct: () {},
+                      maxLength: 100,
+                      hint: "Enter Email"),
                   _textTitles(label: 'Portfolio Link'),
-                  _textFormField(valueKey: "link", controller: _portfolioController, enabled: true, fct: (){}, maxLength: 100, hint: "Enter Portfolio Link"),
-
-
+                  _textFormField(valueKey: "link",
+                      controller: _portfolioController,
+                      enabled: true,
+                      fct: () {},
+                      maxLength: 100,
+                      hint: "Enter Portfolio Link"),
 
 
                   const SizedBox(height: 12),
@@ -329,7 +373,12 @@ class _ApplyJobScreenState extends State<ApplyJobScreen> {
                     ),
                   const SizedBox(height: 16),
                   _textTitles(label: 'Message'),
-                  _textFormField(valueKey: "opmsg", controller: _messageController, enabled: true, fct: (){}, maxLength: 1000, hint: "Enter Message"),
+                  _textFormField(valueKey: "opmsg",
+                      controller: _messageController,
+                      enabled: true,
+                      fct: () {},
+                      maxLength: 1000,
+                      hint: "Enter Message"),
 
 
                 ],
@@ -340,30 +389,33 @@ class _ApplyJobScreenState extends State<ApplyJobScreen> {
               onPressed: _isSubmitting
                   ? null
                   : () {
-                if(_formKey.currentState!.validate()){
+                if (_formKey.currentState!.validate()) {
                   showDialog(
                     context: context,
-                    builder: (context) => AlertDialog(
-                      backgroundColor: Colors.white,
-                      title: const Text("Confirm Submission"),
-                      content: const Text("Are you sure you want to submit your application?"),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.of(context).pop(),
-                          child: const Text("Cancel"),
+                    builder: (context) =>
+                        AlertDialog(
+                          backgroundColor: Colors.white,
+                          title: const Text("Confirm Submission"),
+                          content: const Text(
+                              "Are you sure you want to submit your application?"),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.of(context).pop(),
+                              child: const Text("Cancel"),
+                            ),
+                            ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF689f77),
+                              ),
+                              onPressed: () {
+                                Navigator.of(context).pop(); // Close the dialog
+                                _submitApplication(); // Proceed with submission
+                              },
+                              child: const Text("Confirm",
+                                  style: TextStyle(color: Colors.white)),
+                            ),
+                          ],
                         ),
-                        ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF689f77),
-                          ),
-                          onPressed: () {
-                            Navigator.of(context).pop(); // Close the dialog
-                            _submitApplication(); // Proceed with submission
-                          },
-                          child: const Text("Confirm", style: TextStyle(color: Colors.white)),
-                        ),
-                      ],
-                    ),
                   );
                 }
               },
@@ -376,12 +428,12 @@ class _ApplyJobScreenState extends State<ApplyJobScreen> {
                 ),
               ),
               child:
-                  _isSubmitting
-                      ? const CircularProgressIndicator(color: Colors.white)
-                      : const Text(
-                        'SUBMIT',
-                        style: TextStyle(fontSize: 18, color: Colors.white),
-                      ),
+              _isSubmitting
+                  ? const CircularProgressIndicator(color: Colors.white)
+                  : const Text(
+                'SUBMIT',
+                style: TextStyle(fontSize: 18, color: Colors.white),
+              ),
             ),
           ],
         ),

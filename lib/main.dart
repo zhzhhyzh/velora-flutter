@@ -1,15 +1,18 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:velora2/user_state.dart';
+import 'Services/notification_service.dart';
 import 'firebase_options.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 Future<void> main() async {
-  //TODO - Insert initialisation of Firebase
+
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load();
 
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  await NotificationService.init();
+
   runApp(MyApp());
 }
 
