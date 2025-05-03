@@ -87,7 +87,6 @@ flutter:
     - assets/images/
     - .env
 
-
   fonts:
     - family: Signatra
       fonts:
