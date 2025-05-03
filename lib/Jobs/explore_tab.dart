@@ -41,7 +41,7 @@ class _ExploreTabState extends State<ExploreTab> {
       final localJobs = await LocalDatabase.getJobs();
       final jobMaps = localJobs.map((job) {
         return {
-          'doc': null, // No Firestore DocumentSnapshot
+          'doc': null,
           'data': {
             'jobTitle': job.jobTitle,
             'comName': job.comName,
@@ -49,7 +49,7 @@ class _ExploreTabState extends State<ExploreTab> {
             'jobCat': job.jobCat,
             'jobImage': job.jobImage,
             'deadline': job.deadline?.toIso8601String(),
-            'state': '', // Optional: if you want to simulate state/country
+            'state': '',
             'country': '',
           }
         };

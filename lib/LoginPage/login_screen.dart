@@ -75,8 +75,10 @@ class _LoginState extends State<Login> with TickerProviderStateMixin {
         email: _emailTextController.text.trim().toLowerCase(),
         password: _passTextController.text.trim(),
       );
+      if(!mounted) return;
       Navigator.canPop(context) ? Navigator.pop(context) : null;
     } catch (error) {
+      if(!mounted) return;
       setState(() {
         _isLoading = false;
       });
@@ -93,7 +95,7 @@ class _LoginState extends State<Login> with TickerProviderStateMixin {
       print('error occurred $error');
       return;
     }
-
+    if(!mounted) return;
     setState(() {
       _isLoading = false;
     });
