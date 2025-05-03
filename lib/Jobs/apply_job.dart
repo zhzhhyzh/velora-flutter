@@ -7,7 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import '../Services/email_sender.dart';
-import '../Services/notification_handler.dart';
+import '../Services/Notification/notification_handler.dart';
 import '../Widgets/the_app_bar.dart';
 
 class ApplyJobScreen extends StatefulWidget {

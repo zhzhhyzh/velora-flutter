@@ -6,7 +6,7 @@ import 'package:velora2/Home/home_screen.dart';
 import 'package:velora2/LoginPage/login_screen.dart';
 import 'package:velora2/Services/app_lifecycle_handler.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:velora2/Services/notification_service.dart';
+import 'package:velora2/Services/Notification/notification_service.dart';
 
 class UserState extends StatefulWidget {
   const UserState({super.key});

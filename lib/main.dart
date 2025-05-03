@@ -1,7 +1,7 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:velora2/user_state.dart';
-import 'Services/notification_service.dart';
+import 'Services/Notification/notification_service.dart';
 import 'firebase_options.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
