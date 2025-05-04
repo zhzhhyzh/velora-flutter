@@ -7,6 +7,7 @@ import 'package:velora2/Hire/search_screen.dart';
 import 'package:velora2/Home/home_screen.dart';
 import 'package:velora2/Jobs/search_screen.dart';
 import 'package:velora2/Profile/detail_screen.dart';
+import 'package:velora2/Explore/explore_screen.dart';
 
 class BottomNavBar extends StatelessWidget {
   int currentIndex = 0;
@@ -39,7 +40,7 @@ class BottomNavBar extends StatelessWidget {
         if (index == 0) {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (_) => HomeScreen()),
+            MaterialPageRoute(builder: (_) => ExploreScreen()),
           );
         } else if (index == 1) {
           Navigator.pushReplacement(
