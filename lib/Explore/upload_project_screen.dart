@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'dart:io';
+import 'services/project_service.dart';
 
 class UploadProjectScreen extends StatefulWidget {
   const UploadProjectScreen({super.key});
@@ -10,9 +14,11 @@ class UploadProjectScreen extends StatefulWidget {
 class _UploadProjectScreenState extends State<UploadProjectScreen> {
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
+  final _projectService = ProjectService();
+  final _auth = FirebaseAuth.instance;
   bool _isUploading = false;
   String? _selectedCategory;
-  bool _hasImage = false;
+  File? _imageFile;
   String? _titleError;
 
   @override
@@ -22,11 +28,61 @@ class _UploadProjectScreenState extends State<UploadProjectScreen> {
     super.dispose();
   }
 
+  Future<void> _pickImage() async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+    if (pickedFile != null) {
+      setState(() {
+        _imageFile = File(pickedFile.path);
+      });
+    }
+  }
+
   bool _validateForm() {
     setState(() {
       _titleError = _titleController.text.isEmpty ? 'Project title is required' : null;
     });
-    return _titleController.text.isNotEmpty && _hasImage && _selectedCategory != null;
+    return _titleController.text.isNotEmpty && _imageFile != null && _selectedCategory != null;
+  }
+
+  Future<void> _uploadProject() async {
+    if (!_validateForm()) return;
+
+    if (_auth.currentUser == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please login to upload projects')),
+      );
+      return;
+    }
+
+    setState(() => _isUploading = true);
+
+    try {
+      await _projectService.uploadProject(
+        title: _titleController.text.trim(),
+        description: _descriptionController.text.trim(),
+        category: _selectedCategory!,
+        imageFile: _imageFile!,
+        tags: _titleController.text.toLowerCase().split(' '),
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Project uploaded successfully!')),
+        );
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to upload project: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isUploading = false);
+      }
+    }
   }
 
   @override
@@ -61,19 +117,20 @@ class _UploadProjectScreenState extends State<UploadProjectScreen> {
                 color: Colors.grey.shade200,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: _hasImage ? const Color(0xFF689f77) : Colors.grey.shade300,
+                  color: _imageFile != null ? const Color(0xFF689f77) : Colors.grey.shade300,
                   width: 2,
                 ),
               ),
-              child: _hasImage
+              child: _imageFile != null
                   ? Stack(
                       children: [
-                        // TODO: Replace with actual image preview
-                        Center(
-                          child: Icon(
-                            Icons.image,
-                            size: 48,
-                            color: Colors.grey.shade400,
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: Image.file(
+                            _imageFile!,
+                            width: double.infinity,
+                            height: double.infinity,
+                            fit: BoxFit.cover,
                           ),
                         ),
                         Positioned(
@@ -82,7 +139,7 @@ class _UploadProjectScreenState extends State<UploadProjectScreen> {
                           child: IconButton(
                             icon: const Icon(Icons.close, color: Colors.white),
                             onPressed: () {
-                              setState(() => _hasImage = false);
+                              setState(() => _imageFile = null);
                             },
                             style: IconButton.styleFrom(
                               backgroundColor: Colors.black.withOpacity(0.5),
@@ -117,10 +174,7 @@ class _UploadProjectScreenState extends State<UploadProjectScreen> {
                         ),
                         const SizedBox(height: 8),
                         ElevatedButton(
-                          onPressed: () {
-                            // TODO: Implement file picker
-                            setState(() => _hasImage = true);
-                          },
+                          onPressed: _pickImage,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF689f77),
                             padding: const EdgeInsets.symmetric(
@@ -142,7 +196,7 @@ class _UploadProjectScreenState extends State<UploadProjectScreen> {
                       ],
                     ),
             ),
-            if (!_hasImage) ...[
+            if (_imageFile == null) ...[
               const SizedBox(height: 8),
               const Text(
                 '* Required',
@@ -262,16 +316,7 @@ class _UploadProjectScreenState extends State<UploadProjectScreen> {
               width: double.infinity,
               height: 50,
               child: ElevatedButton(
-                onPressed: _isUploading ? null : () {
-                  if (_validateForm()) {
-                    setState(() => _isUploading = true);
-                    // TODO: Implement upload
-                    Future.delayed(const Duration(seconds: 2), () {
-                      setState(() => _isUploading = false);
-                      Navigator.pop(context);
-                    });
-                  }
-                },
+                onPressed: _isUploading ? null : _uploadProject,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF689f77),
                   shape: RoundedRectangleBorder(

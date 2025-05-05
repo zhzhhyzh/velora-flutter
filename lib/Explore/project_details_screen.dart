@@ -1,23 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:share_plus/share_plus.dart';
+import '../Models/project_model.dart';
+import '../Models/comment_model.dart';
+import 'services/project_service.dart';
+import 'services/comment_service.dart';
+import 'dart:convert';
 
 class ProjectDetailsScreen extends StatefulWidget {
-  final String title;
-  final String designerName;
-  final String description;
-  final String category;
-  final int views;
-  final int likes;
-  final List<String> comments;
+  final Project project;
 
   const ProjectDetailsScreen({
     super.key,
-    required this.title,
-    required this.designerName,
-    required this.description,
-    required this.category,
-    required this.views,
-    required this.likes,
-    required this.comments,
+    required this.project,
   });
 
   @override
@@ -25,9 +20,45 @@ class ProjectDetailsScreen extends StatefulWidget {
 }
 
 class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
+  final ProjectService _projectService = ProjectService();
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final TextEditingController _commentController = TextEditingController();
   bool _isLiked = false;
-  bool _isBookmarked = false;
-  final _commentController = TextEditingController();
+  Map<String, dynamic>? _designerDetails;
+  final CommentService _commentService = CommentService();
+  bool _isPostingComment = false;
+  Project? _currentProject;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentProject = widget.project;
+    _checkIfLiked();
+    _loadDesignerDetails();
+  }
+
+  Future<void> _loadDesignerDetails() async {
+    final details = await _projectService.getUserDetails(widget.project.designerId);
+    if (mounted) {
+      setState(() {
+        _designerDetails = details;
+      });
+    }
+  }
+
+  Future<void> _checkIfLiked() async {
+    if (_auth.currentUser != null) {
+      final hasLiked = await _projectService.hasUserLiked(
+        _currentProject!.id,
+        _auth.currentUser!.uid,
+      );
+      if (mounted) {
+        setState(() {
+          _isLiked = hasLiked;
+        });
+      }
+    }
+  }
 
   @override
   void dispose() {
@@ -35,313 +66,450 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
     super.dispose();
   }
 
+  Future<void> _refreshProjectData() async {
+    try {
+      final updatedProject = await _projectService.getProject(_currentProject!.id);
+      if (mounted) {
+        setState(() {
+          _currentProject = updatedProject;
+          _isLiked = false; // Reset liked state to be updated by _checkIfLiked
+        });
+        await _checkIfLiked(); // Update liked state with new data
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error refreshing project data: ${e.toString()}')),
+        );
+      }
+    }
+  }
+
+  Future<void> _postComment() async {
+    if (_commentController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter a comment')),
+      );
+      return;
+    }
+
+    setState(() => _isPostingComment = true);
+
+    try {
+      final user = _auth.currentUser;
+      if (user == null) {
+        throw Exception('Must be logged in to comment');
+      }
+
+      await _commentService.addComment(
+        projectId: _currentProject!.id,
+        userId: user.uid,
+        text: _commentController.text.trim(),
+      );
+
+      _commentController.clear();
+      
+      // Refresh project data after posting comment
+      await _refreshProjectData();
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Comment posted successfully')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error posting comment: ${e.toString()}')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isPostingComment = false);
+      }
+    }
+  }
+
+  Future<void> _deleteComment(Comment comment) async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) {
+        throw Exception('Must be logged in to delete comments');
+      }
+
+      await _commentService.deleteComment(
+        commentId: comment.id,
+        projectId: _currentProject!.id,
+        userId: user.uid,
+      );
+
+      // Refresh project data after deleting comment
+      await _refreshProjectData();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Comment deleted successfully')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error deleting comment: ${e.toString()}')),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    if (_currentProject == null) {
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        title: const Text(
-          'Project Details',
-          style: TextStyle(
-            color: Colors.black,
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
+      body: RefreshIndicator(
+        onRefresh: _refreshProjectData,
+        child: CustomScrollView(
+          slivers: [
+            _buildAppBar(),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildProjectInfo(),
+                    const SizedBox(height: 24),
+                    _buildDescription(),
+                    const SizedBox(height: 24),
+                    _buildComments(),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
+      ),
+      bottomNavigationBar: _buildCommentInput(),
+    );
+  }
+
+  Widget _buildAppBar() {
+    return SliverAppBar(
+      pinned: true,
         backgroundColor: Colors.white,
-        elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black),
           onPressed: () => Navigator.pop(context),
         ),
+      title: Text(
+        _currentProject!.title,
+        style: const TextStyle(
+          color: Colors.black,
+          fontSize: 18,
+          fontWeight: FontWeight.bold,
+        ),
+        ),
         actions: [
           IconButton(
-            icon: Icon(
-              _isBookmarked ? Icons.bookmark : Icons.bookmark_border,
-              color: _isBookmarked ? const Color(0xFF689f77) : Colors.grey,
-            ),
+          icon: const Icon(Icons.share, color: Colors.black),
             onPressed: () {
-              setState(() => _isBookmarked = !_isBookmarked);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    _isBookmarked ? 'Project bookmarked!' : 'Bookmark removed',
-                    style: const TextStyle(color: Colors.white),
-                  ),
-                  backgroundColor: const Color(0xFF689f77),
-                  duration: const Duration(seconds: 1),
-                  behavior: SnackBarBehavior.floating,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
+            Share.share(
+              'Check out this amazing project: ${_currentProject!.title}\n${_currentProject!.description}',
               );
             },
           ),
         ],
-      ),
-      body: SingleChildScrollView(
-        child: Column(
+    );
+  }
+
+  Widget _buildProjectInfo() {
+    return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Stack(
           children: [
-            AspectRatio(
-              aspectRatio: 16 / 9,
-              child: Container(
-                decoration: BoxDecoration(
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Image.memory(
+                base64Decode(_currentProject!.imageUrl),
+                width: double.infinity,
+                height: 300,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) => Container(
+                  height: 300,
                   color: Colors.grey.shade300,
-                  borderRadius: const BorderRadius.vertical(
-                    bottom: Radius.circular(12),
-                  ),
-                ),
-                child: const Center(
-                  child: Icon(
-                    Icons.image,
-                    size: 50,
-                    color: Colors.grey,
-                  ),
+                  child: const Icon(Icons.error),
                 ),
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.all(16),
+            Positioned(
+              top: 8,
+              right: 8,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.5),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: IconButton(
+                  icon: const Icon(Icons.fullscreen, color: Colors.white),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => FullScreenImageView(
+                          imageUrl: _currentProject!.imageUrl,
+                        ),
+                  ),
+                    );
+                  },
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            CircleAvatar(
+              radius: 20,
+              backgroundColor: const Color(0xFF689f77),
+              child: _designerDetails != null && _designerDetails!['userImage'] != null
+                ? ClipRRect(
+                    borderRadius: BorderRadius.circular(20),
+                    child: Image.memory(
+                      base64Decode(_designerDetails!['userImage']),
+                      width: 40,
+                      height: 40,
+                      fit: BoxFit.cover,
+                    ),
+                  )
+                : Text(
+                    (_designerDetails?['name'] ?? 'U')[0].toUpperCase(),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                    ),
+                  ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    widget.title,
+                    _designerDetails?['name'] ?? 'Unknown User',
                     style: const TextStyle(
-                      fontSize: 24,
                       fontWeight: FontWeight.bold,
+                      fontSize: 16,
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      const CircleAvatar(
-                        radius: 16,
-                        backgroundColor: Color(0xFF689f77),
                       ),
-                      const SizedBox(width: 8),
                       Text(
-                        widget.designerName,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      const Spacer(),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF689f77),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          widget.category,
-                          style: const TextStyle(
-                            color: Colors.white,
+                    _designerDetails?['position'] ?? _currentProject!.category,
+                    style: TextStyle(
+                      color: Colors.grey.shade600,
                             fontSize: 14,
                           ),
+                  ),
+                ],
                         ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 16),
+        Text(
+          _currentProject!.title,
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 24,
+          ),
+        ),
+        const SizedBox(height: 8),
                   Row(
                     children: [
                       IconButton(
-                        onPressed: () {
-                          setState(() => _isLiked = !_isLiked);
+              onPressed: () async {
+                if (_auth.currentUser != null) {
+                  await _projectService.likeProject(
+                    _currentProject!.id,
+                    _auth.currentUser!.uid,
+                  );
+                  await _refreshProjectData();
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Please login to like projects'),
+                    ),
+                  );
+                }
                         },
                         icon: Icon(
                           _isLiked ? Icons.favorite : Icons.favorite_border,
-                          color: _isLiked ? const Color(0xFF689f77) : Colors.grey,
+                color: _isLiked ? Colors.red : Colors.grey,
                         ),
                       ),
                       Text(
-                        '${widget.likes}',
+              '${_currentProject!.likes}',
                         style: TextStyle(
-                          color: Colors.grey.shade600,
-                          fontSize: 14,
+                color: _isLiked ? Colors.red : Colors.grey,
+                fontSize: 16,
                         ),
                       ),
                       const SizedBox(width: 16),
-                      const Icon(
-                        Icons.remove_red_eye,
+            const Icon(Icons.remove_red_eye, color: Colors.grey),
+            const SizedBox(width: 4),
+            Text(
+              '${_currentProject!.views}',
+              style: const TextStyle(
                         color: Colors.grey,
-                        size: 20,
+                fontSize: 16,
+              ),
                       ),
-                      const SizedBox(width: 8),
-                      Text(
-                        '${widget.views}',
-                        style: TextStyle(
-                          color: Colors.grey.shade600,
-                          fontSize: 14,
-                        ),
-                      ),
-                      const Spacer(),
-                      IconButton(
-                        onPressed: () {
-                          // TODO: Implement share
-                        },
-                        icon: const Icon(
-                          Icons.share_outlined,
+            const SizedBox(width: 16),
+            const Icon(Icons.comment, color: Colors.grey),
+            const SizedBox(width: 4),
+            Text(
+              '${_currentProject!.commentCount}',
+              style: const TextStyle(
                           color: Colors.grey,
+                fontSize: 16,
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 24),
+      ],
+    );
+  }
+
+  Widget _buildDescription() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
                   const Text(
                     'Description',
                     style: TextStyle(
+            fontWeight: FontWeight.bold,
                       fontSize: 18,
-                      fontWeight: FontWeight.bold,
                     ),
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    widget.description,
-                    style: TextStyle(
+          _currentProject!.description,
+          style: const TextStyle(
                       fontSize: 16,
-                      color: Colors.grey.shade700,
                       height: 1.5,
                     ),
                   ),
-                  const SizedBox(height: 24),
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade100,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Column(
+      ],
+    );
+  }
+
+  Widget _buildComments() {
+    return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             const Text(
                               'Comments',
                               style: TextStyle(
+            fontWeight: FontWeight.bold,
                                 fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            Text(
-                              '${widget.comments.length} comments',
+          ),
+        ),
+        const SizedBox(height: 16),
+        StreamBuilder<List<Comment>>(
+          stream: _commentService.getCommentsStream(_currentProject!.id),
+          builder: (context, snapshot) {
+            if (snapshot.hasError) {
+              return Center(
+                child: Text('Error: ${snapshot.error}'),
+              );
+            }
+
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(
+                child: CircularProgressIndicator(),
+              );
+            }
+
+            final comments = snapshot.data ?? [];
+
+            if (comments.isEmpty) {
+              return const Center(
+                child: Text(
+                  'No comments yet. Be the first to comment!',
                               style: TextStyle(
-                                fontSize: 14,
-                                color: Colors.grey.shade600,
+                    color: Colors.grey,
+                    fontSize: 16,
                               ),
                             ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        ListView.builder(
+              );
+            }
+
+            return ListView.builder(
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
-                          itemCount: widget.comments.length,
+              itemCount: comments.length,
                           itemBuilder: (context, index) {
-                            return Container(
-                              margin: const EdgeInsets.only(bottom: 16),
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(12),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.grey.withOpacity(0.1),
-                                    spreadRadius: 1,
-                                    blurRadius: 3,
-                                    offset: const Offset(0, 1),
-                                  ),
-                                ],
+                final comment = comments[index];
+                final isCommentOwner = _auth.currentUser?.uid == comment.userId;
+
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      CircleAvatar(
+                        radius: 16,
+                        backgroundColor: const Color(0xFF689f77),
+                        child: comment.userImage != null && comment.userImage!.isNotEmpty
+                          ? ClipRRect(
+                              borderRadius: BorderRadius.circular(16),
+                              child: Image.memory(
+                                base64Decode(comment.userImage!),
+                                width: 32,
+                                height: 32,
+                                fit: BoxFit.cover,
                               ),
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const CircleAvatar(
-                                    radius: 16,
-                                    backgroundColor: Color(0xFF689f77),
+                            )
+                          : Text(
+                              (comment.userName.isNotEmpty ? comment.userName[0] : 'U').toUpperCase(),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 14,
+                              ),
                                   ),
-                                  const SizedBox(width: 12),
+                                  ),
+                      const SizedBox(width: 8),
                                   Expanded(
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
                                         Row(
                                           children: [
-                                            const Text(
-                                              'User Name',
-                                              style: TextStyle(
+                                Text(
+                                  comment.userName,
+                                  style: const TextStyle(
                                                 fontWeight: FontWeight.bold,
                                                 fontSize: 14,
                                               ),
                                             ),
-                                            const SizedBox(width: 8),
-                                            Text(
-                                              '2 hours ago',
-                                              style: TextStyle(
-                                                fontSize: 12,
-                                                color: Colors.grey.shade500,
-                                              ),
+                                const Spacer(),
+                                if (isCommentOwner)
+                                  IconButton(
+                                    icon: const Icon(Icons.delete, size: 16),
+                                    onPressed: () => _deleteComment(comment),
                                             ),
                                           ],
                                         ),
                                         const SizedBox(height: 4),
                                         Text(
-                                          widget.comments[index],
-                                          style: TextStyle(
-                                            fontSize: 14,
-                                            color: Colors.grey.shade700,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 8),
-                                        Row(
-                                          children: [
-                                            IconButton(
-                                              icon: const Icon(
-                                                Icons.favorite_border,
-                                                size: 16,
-                                                color: Colors.grey,
-                                              ),
-                                              onPressed: () {
-                                                // TODO: Implement like comment
-                                              },
-                                              padding: EdgeInsets.zero,
-                                              constraints: const BoxConstraints(),
-                                            ),
-                                            const SizedBox(width: 4),
-                                            Text(
-                                              '12',
-                                              style: TextStyle(
-                                                fontSize: 12,
-                                                color: Colors.grey.shade600,
-                                              ),
-                                            ),
-                                            const SizedBox(width: 16),
-                                            TextButton(
-                                              onPressed: () {
-                                                // TODO: Implement reply
-                                              },
-                                              style: TextButton.styleFrom(
-                                                padding: EdgeInsets.zero,
-                                                minimumSize: Size.zero,
-                                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                              ),
-                                              child: Text(
-                                                'Reply',
-                                                style: TextStyle(
-                                                  fontSize: 12,
-                                                  color: Colors.grey.shade600,
-                                                ),
-                                              ),
-                                            ),
-                                          ],
+                              comment.text,
+                              style: const TextStyle(fontSize: 14),
                                         ),
                                       ],
                                     ),
@@ -350,22 +518,36 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                               ),
                             );
                           },
-                        ),
-                        const SizedBox(height: 16),
-                        Row(
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCommentInput() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 3,
+            offset: const Offset(0, -1),
+          ),
+        ],
+      ),
+      child: Row(
                           children: [
-                            const CircleAvatar(
-                              radius: 16,
-                              backgroundColor: Color(0xFF689f77),
-                            ),
-                            const SizedBox(width: 12),
                             Expanded(
                               child: TextField(
                                 controller: _commentController,
                                 decoration: InputDecoration(
-                                  hintText: 'Write a comment...',
+                hintText: 'Add a comment...',
                                   filled: true,
-                                  fillColor: Colors.white,
+                fillColor: Colors.grey.shade200,
                                   border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(20),
                                     borderSide: BorderSide.none,
@@ -374,28 +556,65 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                                     horizontal: 16,
                                     vertical: 12,
                                   ),
-                                  suffixIcon: IconButton(
-                                    icon: const Icon(
-                                      Icons.send,
-                                      color: Color(0xFF689f77),
-                                    ),
-                                    onPressed: () {
-                                      // TODO: Implement comment submission
-                                    },
                                   ),
                                 ),
                               ),
+          const SizedBox(width: 8),
+          _isPostingComment
+              ? const CircularProgressIndicator()
+              : IconButton(
+                  icon: const Icon(Icons.send, color: Color(0xFF689f77)),
+                  onPressed: _postComment,
                             ),
                           ],
                         ),
-                      ],
-                    ),
-                  ),
-                ],
+    );
+  }
+}
+
+class FullScreenImageView extends StatelessWidget {
+  final String imageUrl;
+
+  const FullScreenImageView({
+    super.key,
+    required this.imageUrl,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: Stack(
+        children: [
+          Center(
+            child: InteractiveViewer(
+              minScale: 0.5,
+              maxScale: 4.0,
+              child: Image.memory(
+                base64Decode(imageUrl),
+                fit: BoxFit.contain,
+                errorBuilder: (context, error, stackTrace) => Container(
+                  color: Colors.grey.shade300,
+                  child: const Icon(Icons.error, color: Colors.white),
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            top: 40,
+            right: 16,
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.5),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: IconButton(
+                icon: const Icon(Icons.close, color: Colors.white),
+                onPressed: () => Navigator.pop(context),
+              ),
               ),
             ),
           ],
-        ),
       ),
     );
   }
