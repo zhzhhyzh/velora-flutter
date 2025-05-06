@@ -1,4 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'dart:convert';
+import '../Models/project_model.dart';
+import 'services/project_service.dart';
+import '../Services/localdatabase/explore_search_history.dart';
 import 'project_details_screen.dart';
 
 class SearchScreen extends StatefulWidget {
@@ -9,8 +14,19 @@ class SearchScreen extends StatefulWidget {
 }
 
 class _SearchScreenState extends State<SearchScreen> {
+  final ProjectService _projectService = ProjectService();
+  final ExploreSearchHistory _searchHistoryDb = ExploreSearchHistory();
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final TextEditingController _searchController = TextEditingController();
+  
   String _searchQuery = '';
+  String _selectedSortBy = 'Most Recent';
+  String _selectedTimeFrame = 'All Time';
+  DateTimeRange? _customDateRange;
   int _selectedCategory = 0;
+  bool _isSearching = false;
+  List<String> _recentSearches = [];
+  
   final List<String> _categories = [
     'All',
     'UI/UX',
@@ -22,32 +38,93 @@ class _SearchScreenState extends State<SearchScreen> {
     'Mobile'
   ];
 
-  // Filter state
-  String _selectedSortBy = 'Most Recent';
-  String _selectedTimeFrame = 'All Time';
-  bool _showLikedOnly = false;
+  final List<String> _trendingTopics = [
+    'UI Design Trends 2024',
+    'Minimalist Design',
+    'Color Palettes',
+    'Mobile App UI',
+    'Web Design',
+    'Typography',
+    'Branding',
+    'Animation',
+    'Design Systems',
+    'User Experience'
+  ];
+
   final List<String> _sortOptions = [
     'Most Recent',
     'Most Popular',
-    'Most Liked',
-    'Most Viewed'
+    'Most Liked'
   ];
+
   final List<String> _timeFrames = [
     'All Time',
     'This Week',
     'This Month',
-    'This Year'
+    'This Year',
+    'Custom Range'
   ];
 
-  // Temporary state for likes and comments
-  final Map<int, bool> _likedProjects = {};
-  final Map<int, int> _commentCounts = {};
+  @override
+  void initState() {
+    super.initState();
+    _loadRecentSearches();
+  }
+
+  Future<void> _loadRecentSearches() async {
+    final searches = await _searchHistoryDb.getRecentSearches();
+    setState(() {
+      _recentSearches = searches;
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _selectDateRange() async {
+    final DateTimeRange? picked = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now(),
+      initialDateRange: _customDateRange,
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: Color(0xFF689f77),
+              onPrimary: Colors.white,
+              surface: Colors.white,
+              onSurface: Colors.black,
+              background: Colors.white,
+              onBackground: Colors.black,
+            ),
+            dialogBackgroundColor: Colors.white,
+            scaffoldBackgroundColor: Colors.white,
+            appBarTheme: const AppBarTheme(
+              backgroundColor: Colors.white,
+              foregroundColor: Colors.black,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+    if (picked != null) {
+      setState(() {
+        _customDateRange = picked;
+        _selectedTimeFrame = 'Custom Range';
+      });
+    }
+  }
 
   void _showFilterDialog() {
     showDialog(
       context: context,
       builder: (context) => StatefulBuilder(
-        builder: (context, setState) => Dialog(
+        builder: (context, setDialogState) => Dialog(
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
@@ -61,7 +138,7 @@ class _SearchScreenState extends State<SearchScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     const Text(
-                      'Filter Projects',
+                      'Filter Results',
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
@@ -72,6 +149,36 @@ class _SearchScreenState extends State<SearchScreen> {
                       onPressed: () => Navigator.pop(context),
                     ),
                   ],
+                ),
+                const SizedBox(height: 24),
+                const Text(
+                  'Category',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: _categories.asMap().entries.map((entry) {
+                    final index = entry.key;
+                    final category = entry.value;
+                    final isSelected = _selectedCategory == index;
+                    return ChoiceChip(
+                      label: Text(category),
+                      selected: isSelected,
+                      onSelected: (selected) {
+                        setDialogState(() => _selectedCategory = index);
+                      },
+                      backgroundColor: Colors.grey.shade200,
+                      selectedColor: const Color(0xFF689f77),
+                      labelStyle: TextStyle(
+                        color: isSelected ? Colors.white : Colors.black,
+                      ),
+                    );
+                  }).toList(),
                 ),
                 const SizedBox(height: 24),
                 const Text(
@@ -91,7 +198,7 @@ class _SearchScreenState extends State<SearchScreen> {
                       label: Text(option),
                       selected: isSelected,
                       onSelected: (selected) {
-                        setState(() => _selectedSortBy = option);
+                        setDialogState(() => _selectedSortBy = option);
                       },
                       backgroundColor: Colors.grey.shade200,
                       selectedColor: const Color(0xFF689f77),
@@ -119,7 +226,15 @@ class _SearchScreenState extends State<SearchScreen> {
                       label: Text(timeFrame),
                       selected: isSelected,
                       onSelected: (selected) {
-                        setState(() => _selectedTimeFrame = timeFrame);
+                        if (timeFrame == 'Custom Range') {
+                          Navigator.pop(context);
+                          _selectDateRange();
+                        } else {
+                          setDialogState(() {
+                            _selectedTimeFrame = timeFrame;
+                            _customDateRange = null;
+                          });
+                        }
                       },
                       backgroundColor: Colors.grey.shade200,
                       selectedColor: const Color(0xFF689f77),
@@ -129,28 +244,24 @@ class _SearchScreenState extends State<SearchScreen> {
                     );
                   }).toList(),
                 ),
-                const SizedBox(height: 24),
-                Row(
-                  children: [
-                    Checkbox(
-                      value: _showLikedOnly,
-                      onChanged: (value) {
-                        setState(() => _showLikedOnly = value ?? false);
-                      },
-                      activeColor: const Color(0xFF689f77),
+                if (_customDateRange != null) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    '${_customDateRange!.start.toString().split(' ')[0]} to ${_customDateRange!.end.toString().split(' ')[0]}',
+                    style: const TextStyle(
+                      color: Color(0xFF689f77),
+                      fontSize: 14,
                     ),
-                    const Text(
-                      'Show only liked projects',
-                      style: TextStyle(fontSize: 14),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
                 const SizedBox(height: 24),
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
                     onPressed: () {
-                      // TODO: Apply filters
+                      setState(() {
+                        // Trigger rebuild with new filter values
+                      });
                       Navigator.pop(context);
                     },
                     style: ElevatedButton.styleFrom(
@@ -178,6 +289,260 @@ class _SearchScreenState extends State<SearchScreen> {
     );
   }
 
+  void _onSearchSubmitted(String value) async {
+    if (value.trim().isNotEmpty) {
+      await _searchHistoryDb.addSearchQuery(value.trim());
+      await _loadRecentSearches();
+    }
+    setState(() {
+      _searchQuery = value;
+      _isSearching = true;
+    });
+  }
+
+  void _onSearchChanged(String value) {
+    setState(() {
+      _searchQuery = value;
+      _isSearching = value.isNotEmpty;
+    });
+  }
+
+  Future<void> _clearSearchHistory() async {
+    await _searchHistoryDb.clearSearchHistory();
+    setState(() {
+      _recentSearches = [];
+    });
+  }
+
+  Future<void> _removeSearchQuery(String query) async {
+    await _searchHistoryDb.removeSearchQuery(query);
+    await _loadRecentSearches();
+  }
+
+  Widget _buildSearchBar() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 3,
+            offset: const Offset(0, 1),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                hintText: 'Search for inspiration...',
+                hintStyle: TextStyle(color: Colors.grey.shade400),
+                prefixIcon: const Icon(Icons.search, color: Colors.grey),
+                suffixIcon: _searchQuery.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.clear, color: Colors.grey),
+                        onPressed: () {
+                          _searchController.clear();
+                          setState(() {
+                            _searchQuery = '';
+                            _isSearching = false;
+                          });
+                        },
+                      )
+                    : null,
+                filled: true,
+                fillColor: Colors.grey.shade100,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(20),
+                  borderSide: BorderSide.none,
+                ),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+              ),
+              onChanged: _onSearchChanged,
+              onSubmitted: _onSearchSubmitted,
+            ),
+          ),
+          if (!_isSearching)
+            IconButton(
+              icon: const Icon(Icons.filter_list, color: Color(0xFF689f77)),
+              onPressed: _showFilterDialog,
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTrendingTopics() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Padding(
+          padding: EdgeInsets.all(16),
+          child: Text(
+            'Trending Projects',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+        StreamBuilder<List<Project>>(
+          stream: _projectService.getTrendingProjects(),
+          builder: (context, snapshot) {
+            if (snapshot.hasError) {
+              return const Center(child: Text('Error loading trending projects'));
+            }
+
+            if (!snapshot.hasData) {
+              return const Center(child: CircularProgressIndicator());
+            }
+
+            final projects = snapshot.data!;
+            if (projects.isEmpty) {
+              return const Center(child: Text('No trending projects found'));
+            }
+
+            return SizedBox(
+              height: 40,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                itemCount: projects.length,
+                itemBuilder: (context, index) {
+                  final project = projects[index];
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: InkWell(
+                      onTap: () {
+                        _searchController.text = project.title;
+                        _onSearchSubmitted(project.title);
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade100,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.trending_up,
+                              size: 16,
+                              color: Colors.grey.shade600,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              project.title,
+                              style: TextStyle(
+                                color: Colors.grey.shade800,
+                                fontSize: 14,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              '(${project.views} views)',
+                              style: TextStyle(
+                                color: Colors.grey.shade600,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRecentSearches() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Recent Searches',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              if (_recentSearches.isNotEmpty)
+                TextButton(
+                  onPressed: _clearSearchHistory,
+                  child: const Text(
+                    'Clear All',
+                    style: TextStyle(
+                      color: Color(0xFF689f77),
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+        if (_recentSearches.isEmpty)
+          const Padding(
+            padding: EdgeInsets.all(16),
+            child: Text(
+              'No recent searches',
+              style: TextStyle(
+                color: Colors.grey,
+                fontSize: 14,
+              ),
+            ),
+          )
+        else
+          ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: _recentSearches.length,
+            itemBuilder: (context, index) {
+              return ListTile(
+                leading: const Icon(Icons.history, color: Colors.grey),
+                title: Text(_recentSearches[index]),
+                trailing: IconButton(
+                  icon: const Icon(Icons.close, size: 16, color: Colors.grey),
+                  onPressed: () => _removeSearchQuery(_recentSearches[index]),
+                ),
+                onTap: () {
+                  _searchController.text = _recentSearches[index];
+                  _onSearchSubmitted(_recentSearches[index]);
+                },
+              );
+            },
+          ),
+      ],
+    );
+  }
+
+  Widget _buildSearchSuggestions() {
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildTrendingTopics(),
+          const Divider(height: 32),
+          _buildRecentSearches(),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -189,466 +554,269 @@ class _SearchScreenState extends State<SearchScreen> {
           icon: const Icon(Icons.arrow_back, color: Colors.black),
           onPressed: () => Navigator.pop(context),
         ),
-        title: TextField(
-          autofocus: true,
-          decoration: InputDecoration(
-            hintText: 'Search for inspiration...',
-            filled: true,
-            fillColor: Colors.grey.shade200,
-            prefixIcon: const Icon(Icons.search, color: Colors.black),
-            suffixIcon: IconButton(
-              icon: const Icon(Icons.filter_list, color: Colors.black),
-              onPressed: _showFilterDialog,
-            ),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide.none,
-            ),
-          ),
-          onChanged: (value) => setState(() => _searchQuery = value.toLowerCase()),
-        ),
+        title: _buildSearchBar(),
       ),
-      body: _searchQuery.isEmpty
-          ? _buildSearchSuggestions()
-          : _buildSearchResults(),
-    );
-  }
-
-  Widget _buildSearchSuggestions() {
-    return SingleChildScrollView(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Trending Topics',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
+      body: _isSearching
+          ? Column(
               children: [
-                _buildTrendingTopic('UI Design Trends 2024'),
-                _buildTrendingTopic('Minimalist Design'),
-                _buildTrendingTopic('Color Palettes'),
-                _buildTrendingTopic('Mobile App UI'),
-                _buildTrendingTopic('Web Design'),
-                _buildTrendingTopic('Typography'),
-                _buildTrendingTopic('Branding'),
-                _buildTrendingTopic('Animation'),
-              ],
-            ),
-            const SizedBox(height: 24),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  'Recent Searches',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
+                if (_searchQuery.isNotEmpty || _selectedCategory != 0 || _selectedTimeFrame != 'All Time')
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'Active Filters: ${_selectedCategory != 0 ? _categories[_selectedCategory] : ''}${_selectedSortBy != 'Most Recent' ? ', $_selectedSortBy' : ''}${_selectedTimeFrame != 'All Time' ? ', $_selectedTimeFrame' : ''}',
+                            style: const TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey,
+                            ),
                   ),
                 ),
                 TextButton(
                   onPressed: () {
-                    // TODO: Clear search history
-                  },
-                  child: Text(
+                            setState(() {
+                              _searchQuery = '';
+                              _selectedCategory = 0;
+                              _selectedSortBy = 'Most Recent';
+                              _selectedTimeFrame = 'All Time';
+                              _customDateRange = null;
+                              _searchController.clear();
+                              _isSearching = false;
+                            });
+                          },
+                          child: const Text(
                     'Clear All',
                     style: TextStyle(
-                      color: Colors.grey.shade600,
-                      fontSize: 14,
+                              color: Color(0xFF689f77),
+                              fontWeight: FontWeight.bold,
                     ),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 12),
-            ListView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: 5,
-              itemBuilder: (context, index) {
-                return ListTile(
-                  leading: const Icon(
-                    Icons.history,
-                    color: Colors.grey,
                   ),
-                  title: Text(
-                    'Recent search ${index + 1}',
-                    style: const TextStyle(fontSize: 14),
-                  ),
-                  trailing: IconButton(
-                    icon: const Icon(
-                      Icons.close,
-                      size: 16,
-                      color: Colors.grey,
-                    ),
-                    onPressed: () {
-                      // TODO: Remove from history
-                    },
-                  ),
-                );
-              },
-            ),
-          ],
-        ),
-      ),
+                Expanded(
+                  child: _buildSearchResults(),
+                ),
+              ],
+            )
+          : _buildSearchSuggestions(),
     );
   }
 
   Widget _buildSearchResults() {
+    return StreamBuilder<List<Project>>(
+      stream: _projectService.getProjects(
+        category: _selectedCategory == 0 ? null : _categories[_selectedCategory],
+        sortBy: _selectedSortBy,
+        timeFrame: _selectedTimeFrame,
+        customDateRange: _customDateRange,
+        searchQuery: _searchQuery,
+      ),
+      builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return Center(
+            child: Text('Error: ${snapshot.error}'),
+          );
+        }
+
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(
+            child: CircularProgressIndicator(),
+          );
+        }
+
+        final projects = snapshot.data ?? [];
+
+        if (projects.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.search_off,
+                  size: 64,
+                  color: Colors.grey.shade400,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  _searchQuery.isEmpty
+                      ? 'No projects found'
+                      : 'No results for "$_searchQuery"',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.grey.shade600,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
     return ListView.builder(
       padding: const EdgeInsets.all(16),
-      itemCount: 10, // Replace with actual search results
+          itemCount: projects.length,
       itemBuilder: (context, index) {
         return Padding(
           padding: const EdgeInsets.only(bottom: 16),
-          child: _buildShotCard(index),
+              child: _buildProjectCard(projects[index]),
+            );
+          },
         );
       },
     );
   }
 
-  Widget _buildTrendingTopic(String topic) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 12,
-        vertical: 6,
-      ),
-      decoration: BoxDecoration(
-        color: Colors.grey.shade200,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(
-            Icons.trending_up,
-            size: 16,
-            color: Color(0xFF689f77),
-          ),
-          const SizedBox(width: 4),
-          Text(
-            topic,
-            style: const TextStyle(fontSize: 14),
-          ),
-        ],
-      ),
-    );
-  }
+  Widget _buildProjectCard(Project project) {
+    return FutureBuilder<bool>(
+      future: _projectService.hasUserLiked(project.id, _auth.currentUser?.uid ?? ''),
+      builder: (context, snapshot) {
+        final isLiked = snapshot.data ?? false;
 
-  Widget _buildShotCard(int index) {
-    final isLiked = _likedProjects[index] ?? false;
-    final commentCount = _commentCounts[index] ?? 0;
+        return FutureBuilder<Map<String, dynamic>?>(
+          future: _projectService.getUserDetails(project.designerId),
+          builder: (context, userSnapshot) {
+            final designerDetails = userSnapshot.data;
 
     return GestureDetector(
-      onTap: () {
+              onTap: () async {
+                await _projectService.incrementViewCount(project.id);
+                if (mounted) {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => ProjectDetailsScreen(
-              title: 'Project Title',
-              designerName: 'Designer Name',
-              description: 'This is a sample project description that explains what the project is about and its key features.',
-              category: 'UI/UX',
-              views: 2500,
-              likes: 1200,
-              comments: [
-                'This is an amazing project!',
-                'Great work on the design!',
-                'Love the color scheme!',
-                'Very inspiring work!',
-                'The UI is so clean and modern!',
-              ],
-            ),
-          ),
-        );
-      },
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.grey.shade200,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey.withOpacity(0.1),
-              spreadRadius: 1,
-              blurRadius: 3,
-              offset: const Offset(0, 1),
-            ),
-          ],
-        ),
+                      builder: (context) => ProjectDetailsScreen(project: project),
+                    ),
+                  );
+                }
+              },
+              child: Card(
+                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            AspectRatio(
-              aspectRatio: 16 / 9,
-              child: Container(
-                decoration: BoxDecoration(
+                    ClipRRect(
+                      borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                      child: Image.memory(
+                        base64Decode(project.imageUrl),
+                        height: 200,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) => Container(
+                          height: 200,
                   color: Colors.grey.shade300,
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-                ),
-                child: const Center(
-                  child: Icon(Icons.image, size: 50, color: Colors.grey),
+                          child: const Icon(Icons.error),
                 ),
               ),
             ),
             Padding(
-              padding: const EdgeInsets.all(12),
+                      padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Project Title',
-                    style: TextStyle(
+                          Text(
+                            project.title,
+                            style: const TextStyle(
+                              fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      fontSize: 16,
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 4),
+                          const SizedBox(height: 8),
                   Row(
                     children: [
-                      const CircleAvatar(
+                              CircleAvatar(
                         radius: 12,
-                        backgroundColor: Color(0xFF689f77),
+                                backgroundColor: const Color(0xFF689f77),
+                                child: designerDetails != null && designerDetails!['userImage'] != null
+                                    ? ClipRRect(
+                                        borderRadius: BorderRadius.circular(12),
+                                        child: Image.memory(
+                                          base64Decode(designerDetails!['userImage']),
+                                          width: 24,
+                                          height: 24,
+                                          fit: BoxFit.cover,
+                                        ),
+                                      )
+                                    : Text(
+                                        (designerDetails?['name'] ?? 'U')[0].toUpperCase(),
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 12,
+                                        ),
+                                      ),
                       ),
                       const SizedBox(width: 8),
                       Expanded(
-                        child: const Text(
-                          'Designer Name',
-                          style: TextStyle(fontSize: 14),
+                                child: Text(
+                                  'By ${designerDetails?['name'] ?? 'Unknown User'}',
+                                  style: TextStyle(
+                                    color: Colors.grey.shade600,
+                                    fontSize: 14,
+                                  ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.remove_red_eye, size: 16, color: Colors.grey),
-                          const SizedBox(width: 4),
-                          Text(
-                            '2.5k',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey.shade600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
+                            ],
                   ),
                   const SizedBox(height: 8),
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      Expanded(
-                        child: TextButton(
-                          onPressed: () {
-                            setState(() {
-                              _likedProjects[index] = !isLiked;
-                            });
-                          },
-                          style: TextButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(horizontal: 8),
-                            minimumSize: Size.zero,
-                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Icon(
                                 isLiked ? Icons.favorite : Icons.favorite_border,
                                 size: 16,
-                                color: isLiked ? const Color(0xFF689f77) : Colors.grey,
+                                color: isLiked ? Colors.red : Colors.grey,
                               ),
                               const SizedBox(width: 4),
                               Text(
-                                '1.2k',
+                                '${project.likes}',
                                 style: TextStyle(
+                                  color: isLiked ? Colors.red : Colors.grey,
                                   fontSize: 12,
-                                  color: Colors.grey.shade600,
                                 ),
                               ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      Expanded(
-                        child: TextButton(
-                          onPressed: () {
-                            showDialog(
-                              context: context,
-                              builder: (context) => _buildCommentsDialog(index),
-                            );
-                          },
-                          style: TextButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(horizontal: 8),
-                            minimumSize: Size.zero,
-                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Icon(Icons.comment_outlined, size: 16, color: Colors.grey),
+                              const SizedBox(width: 16),
+                              const Icon(
+                                Icons.remove_red_eye,
+                                size: 16,
+                                color: Colors.grey,
+                              ),
                               const SizedBox(width: 4),
                               Text(
-                                'Comment',
-                                style: TextStyle(
-                                  color: Colors.grey.shade600,
+                                '${project.views}',
+                                style: const TextStyle(
+                                  color: Colors.grey,
                                   fontSize: 12,
                                 ),
                               ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      Expanded(
-                        child: TextButton(
-                          onPressed: () {
-                            // TODO: Implement share functionality
-                          },
-                          style: TextButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(horizontal: 8),
-                            minimumSize: Size.zero,
-                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Icon(Icons.share_outlined, size: 16, color: Colors.grey),
+                              const SizedBox(width: 16),
+                              const Icon(
+                                Icons.comment,
+                                size: 16,
+                                color: Colors.grey,
+                              ),
                               const SizedBox(width: 4),
-                              const Text(
-                                'Share',
-                                style: TextStyle(
+                              Text(
+                                '${project.commentCount}',
+                                style: const TextStyle(
                                   color: Colors.grey,
                                   fontSize: 12,
                                 ),
                               ),
                             ],
                           ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+                        ],
               ),
             ),
           ],
         ),
       ),
     );
-  }
-
-  Widget _buildCommentsDialog(int projectIndex) {
-    return Dialog(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  'Comments',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.close),
-                  onPressed: () => Navigator.pop(context),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Expanded(
-              child: ListView.builder(
-                itemCount: 5, // Replace with actual comments
-                itemBuilder: (context, index) {
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 16),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const CircleAvatar(
-                          radius: 16,
-                          backgroundColor: Color(0xFF689f77),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'User Name',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 14,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              const Text(
-                                'This is a sample comment for the project.',
-                                style: TextStyle(fontSize: 14),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                '2 hours ago',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.grey.shade600,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              decoration: InputDecoration(
-                hintText: 'Add a comment...',
-                filled: true,
-                fillColor: Colors.grey.shade200,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(20),
-                  borderSide: BorderSide.none,
-                ),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
-                ),
-                suffixIcon: IconButton(
-                  icon: const Icon(Icons.send, color: Color(0xFF689f77)),
-                  onPressed: () {
-                    // TODO: Implement comment submission
-                  },
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
+          },
+        );
+      },
     );
   }
 } 
