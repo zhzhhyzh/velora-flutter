@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:velora2/Home/home_screen.dart';
+import 'package:velora2/Explore/explore_screen.dart';
 import 'package:velora2/LoginPage/login_screen.dart';
 import 'package:velora2/Services/app_lifecycle_handler.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -83,7 +83,7 @@ class _UserStateState extends State<UserState> with WidgetsBindingObserver {
             _currentUser = user;
             _startNotificationListener(user);
           }
-          return const HomeScreen();
+          return const ExploreScreen();
         } else {
           _notificationSubscription?.cancel();
           _currentUser = null;

@@ -4,7 +4,6 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:velora2/Contest/search_screen.dart';
 import 'package:velora2/Hire/search_screen.dart';
-import 'package:velora2/Home/home_screen.dart';
 import 'package:velora2/Jobs/search_screen.dart';
 import 'package:velora2/Profile/detail_screen.dart';
 import 'package:velora2/Explore/explore_screen.dart';

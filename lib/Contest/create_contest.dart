@@ -87,8 +87,15 @@ class _CreateContestPageState extends State<CreateContestPage> {
         isActive: true,
       );
 
-      await FirebaseFirestore.instance.collection('contests').doc(id).set(contest.toMap());
       await LocalDatabase.insertContest(contest);
+      await FirebaseFirestore.instance.collection('contests').doc(id).set({
+        ...contest.toMap(),
+        'startDate': contest.startDate.millisecondsSinceEpoch,
+        'endDate': contest.endDate.millisecondsSinceEpoch,
+        'createdAt': contest.createdAt.millisecondsSinceEpoch,
+        'winnerEmail': '',
+        'winnerNotified': false,
+      });
 
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Contest created successfully!')));
       Navigator.pop(context);

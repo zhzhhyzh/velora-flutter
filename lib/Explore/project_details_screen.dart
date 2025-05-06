@@ -28,6 +28,8 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
   final CommentService _commentService = CommentService();
   bool _isPostingComment = false;
   Project? _currentProject;
+  bool _isFollowing = false;
+  int _followerCount = 0;
 
   @override
   void initState() {
@@ -43,6 +45,8 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
       setState(() {
         _designerDetails = details;
       });
+      _checkFollowStatus();
+      _loadFollowerCount();
     }
   }
 
@@ -56,6 +60,40 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
         setState(() {
           _isLiked = hasLiked;
         });
+      }
+    }
+  }
+
+  Future<void> _checkFollowStatus() async {
+    if (_auth.currentUser != null) {
+      final isFollowing = await _projectService.isFollowing(widget.project.designerId);
+      if (mounted) {
+        setState(() {
+          _isFollowing = isFollowing;
+        });
+      }
+    }
+  }
+
+  Future<void> _loadFollowerCount() async {
+    final count = await _projectService.getFollowerCount(widget.project.designerId);
+    if (mounted) {
+      setState(() {
+        _followerCount = count;
+      });
+    }
+  }
+
+  Future<void> _handleFollow() async {
+    try {
+      await _projectService.toggleFollow(widget.project.designerId);
+      await _checkFollowStatus();
+      await _loadFollowerCount();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: ${e.toString()}')),
+        );
       }
     }
   }
@@ -101,10 +139,9 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
         throw Exception('Must be logged in to comment');
       }
 
-      await _commentService.addComment(
-        projectId: _currentProject!.id,
-        userId: user.uid,
-        text: _commentController.text.trim(),
+      await _projectService.addComment(
+        _currentProject!.id,
+        _commentController.text.trim(),
       );
 
       _commentController.clear();
@@ -230,7 +267,7 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
 
   Widget _buildProjectInfo() {
     return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Stack(
           children: [
@@ -265,7 +302,7 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                         builder: (context) => FullScreenImageView(
                           imageUrl: _currentProject!.imageUrl,
                         ),
-                  ),
+                      ),
                     );
                   },
                 ),
@@ -308,20 +345,39 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
                     ),
-                      ),
-                      Text(
+                  ),
+                  Text(
                     _designerDetails?['position'] ?? _currentProject!.category,
                     style: TextStyle(
                       color: Colors.grey.shade600,
-                            fontSize: 14,
-                          ),
+                      fontSize: 14,
+                    ),
+                  ),
+                  Text(
+                    '$_followerCount Followers',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey.shade600,
+                    ),
                   ),
                 ],
-                        ),
-                      ),
-                    ],
+              ),
+            ),
+            if (_auth.currentUser?.uid != widget.project.designerId)
+              ElevatedButton(
+                onPressed: _handleFollow,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _isFollowing ? Colors.grey : const Color(0xFF689f77),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
                   ),
-                  const SizedBox(height: 16),
+                ),
+                child: Text(_isFollowing ? 'Following' : 'Follow'),
+              ),
+          ],
+        ),
+        const SizedBox(height: 16),
         Text(
           _currentProject!.title,
           style: const TextStyle(
@@ -330,9 +386,9 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
           ),
         ),
         const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      IconButton(
+        Row(
+          children: [
+            IconButton(
               onPressed: () async {
                 if (_auth.currentUser != null) {
                   await _projectService.likeProject(
@@ -347,41 +403,41 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                     ),
                   );
                 }
-                        },
-                        icon: Icon(
-                          _isLiked ? Icons.favorite : Icons.favorite_border,
+              },
+              icon: Icon(
+                _isLiked ? Icons.favorite : Icons.favorite_border,
                 color: _isLiked ? Colors.red : Colors.grey,
-                        ),
-                      ),
-                      Text(
+              ),
+            ),
+            Text(
               '${_currentProject!.likes}',
-                        style: TextStyle(
+              style: TextStyle(
                 color: _isLiked ? Colors.red : Colors.grey,
                 fontSize: 16,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
+              ),
+            ),
+            const SizedBox(width: 16),
             const Icon(Icons.remove_red_eye, color: Colors.grey),
             const SizedBox(width: 4),
             Text(
               '${_currentProject!.views}',
               style: const TextStyle(
-                        color: Colors.grey,
+                color: Colors.grey,
                 fontSize: 16,
               ),
-                      ),
+            ),
             const SizedBox(width: 16),
             const Icon(Icons.comment, color: Colors.grey),
             const SizedBox(width: 4),
             Text(
               '${_currentProject!.commentCount}',
               style: const TextStyle(
-                          color: Colors.grey,
+                color: Colors.grey,
                 fontSize: 16,
-                        ),
-                      ),
-                    ],
-                  ),
+              ),
+            ),
+          ],
+        ),
       ],
     );
   }
