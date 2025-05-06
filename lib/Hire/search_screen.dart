@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:velora2/Hire/register_designer.dart';
 import '../Services/global_dropdown.dart';
 import 'tab_filtered_designer.dart';
 
@@ -14,6 +17,9 @@ class AllHiresScreen extends StatefulWidget {
 
 class _AllHiresScreenState extends State<AllHiresScreen> {
   String _searchQuery = '';
+  bool _isSearching = false;
+  TextEditingController _searchController = TextEditingController();
+
   String? _designCatFilter;
   int _selectedTabIndex = 0;
   final tabs = ['All Designer', ...GlobalDD.designCategoryList ]; //... make tabs a List<String> instead of List<Object>
@@ -28,6 +34,43 @@ class _AllHiresScreenState extends State<AllHiresScreen> {
             children: [
               _buildSearchAndFilterBar(),
               _buildTabButtons(),
+
+              Padding(
+                padding: EdgeInsets.only(left: 8, right: 8, top: 8),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Designer List',
+                      style: TextStyle(fontSize: 20,fontWeight: FontWeight.bold)
+                    ),
+                    ElevatedButton(
+                      onPressed: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => RegisterDesigner())
+                      ),
+                      style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF689f77),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 12,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)
+                          ),
+                      ),
+                      child: Text(
+                        'Be a designer',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold
+                        ),
+                      )
+                    )
+                  ]
+                ),
+              ),
+
               Expanded(child: _buildTabContent())
             ],
           )
@@ -39,18 +82,37 @@ class _AllHiresScreenState extends State<AllHiresScreen> {
     return Padding(
       padding: const EdgeInsets.all(8.0),
       child: TextField(
+        controller: _searchController,
         decoration: InputDecoration(
-          hintText: 'Search designers...',
+          hintText: 'Search for designers...',
+          prefixIcon: const Icon(Icons.search, color: Colors.black),
+          suffixIcon: _searchQuery.isNotEmpty
+            ? IconButton(
+            icon: const Icon(Icons.clear, color: Colors.grey),
+            onPressed: () {
+              _searchController.clear();
+              setState(() {
+                _searchQuery = '';
+                _isSearching = false;
+              });
+            },
+          ): IconButton(
+            icon: const Icon(Icons.filter_list_rounded, color: Colors.black),
+            onPressed: _showFilterDialog,
+          ),
           filled: true,
           fillColor: Colors.grey.shade200,
-          prefixIcon: const Icon(Icons.search, color: Colors.black),
-          suffixIcon: IconButton(
-          icon: const Icon(Icons.filter_list_rounded, color: Colors.black),
-          onPressed: _showFilterDialog,
+          border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none
           ),
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
         ),
-        onChanged: (value) => setState(() => _searchQuery = value.toLowerCase()),
+        onChanged: (value) {
+          setState(() {
+            _searchQuery = value.toLowerCase();
+            _isSearching = value.isNotEmpty;
+          });
+        } ,
       ),
     );
   }
@@ -120,7 +182,7 @@ class _AllHiresScreenState extends State<AllHiresScreen> {
                 children: const [
                   Icon(Icons.filter_list_rounded, color: Colors.black),
                   SizedBox(width: 10),
-                  Text('Filter Designers',style: TextStyle(color: Colors.black))
+                  Text('Filter Designers',style: TextStyle(color: Colors.black, fontSize: 16))
                 ],
               ),
               SizedBox(width: 20),
@@ -142,7 +204,7 @@ class _AllHiresScreenState extends State<AllHiresScreen> {
                   dropdownColor: Colors.black87,
                   iconEnabledColor: Colors.white,
                   style: const TextStyle(color: Colors.white),
-                  items: 
+                  items:
                     GlobalDD.designCategoryList
                     .map((item) => DropdownMenuItem(value: item, child: Text(item)))
                     .toList(),
