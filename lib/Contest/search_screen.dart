@@ -9,6 +9,8 @@ import '../Widgets/bottom_nav_bar.dart';
 import '../Widgets/the_app_bar.dart';
 import 'contest_detail.dart';
 import 'create_contest.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../../Services/Notification/notification_service.dart';
 
 class AllContestsScreen extends StatefulWidget {
   const AllContestsScreen({super.key});
@@ -36,6 +38,56 @@ class _AllContestsScreenState extends State<AllContestsScreen> {
     super.initState();
     _loadLocalContests();
     _fetchCloudContests();
+    _checkContestWinnerNotification();
+  }
+
+  Future<void> _checkContestWinnerNotification() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    final userEmail = user.email;
+
+    final querySnapshot = await FirebaseFirestore.instance
+        .collection('contests')
+        .where('endDate', isLessThanOrEqualTo: DateTime.now())
+        .get();
+
+    for (final doc in querySnapshot.docs) {
+      final contest = doc.data();
+      final winnerEmail = contest['winnerEmail'];
+      final notified = (contest['winnerNotified'] ?? false);
+
+      if (winnerEmail == userEmail && !notified) {
+        // Show in-app notification popup
+        if (context.mounted) {
+          await showDialog(
+            context: context,
+            builder: (_) => AlertDialog(
+              title: const Text("Congratulations!"),
+              content: Text("You won the contest: ${contest['title']}"),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text("OK"),
+                ),
+              ],
+            ),
+          );
+        }
+
+        // Update the notification flag in Firestore
+        await FirebaseFirestore.instance
+            .collection('contests')
+            .doc(doc.id)
+            .update({'winnerNotified': true});
+
+        // Optionally trigger a local system notification
+        await NotificationService.showNotification(
+          title: "You won a contest!",
+          body: "Congrats! You are the winner of ${contest['title']}",
+        );
+      }
+    }
   }
 
   Future<void> _loadLocalContests() async {
