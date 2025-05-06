@@ -5,10 +5,13 @@ import 'dart:io';
 import 'dart:convert';
 import '../../Models/project_model.dart';
 import '../../Models/comment_model.dart';
+import 'explore_notification_handler.dart';
+import 'explore_notification_settings.dart';
 
 class ProjectService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final ExploreNotificationHandler _notificationHandler = ExploreNotificationHandler();
   final String _projectsCollection = 'projects';
   final String _commentsCollection = 'comments';
 
@@ -121,13 +124,35 @@ class ProjectService {
 
   // Add a comment to a project
   Future<void> addComment(String projectId, String text) async {
+    print('📝 Starting addComment method'); // Basic log
     try {
       final user = _auth.currentUser;
       if (user == null) throw 'User not logged in';
+      print('👤 Current user ID: ${user.uid}'); // Basic log
 
-      // Get user details
+      // Get user details (commenter)
       final userDetails = await getUserDetails(user.uid);
+      print('🔍 Got user details: ${userDetails != null}'); // Basic log
       if (userDetails == null) throw 'User details not found';
+
+      // Get project details for notification
+      final projectDoc = await _firestore.collection(_projectsCollection).doc(projectId).get();
+      print('📄 Got project document: ${projectDoc.exists}'); // Basic log
+      final projectData = projectDoc.data();
+      if (projectData == null) throw 'Project not found';
+
+      // Get project creator's details
+      final designerId = projectData['designerId'];
+      print('🎨 Designer ID: $designerId'); // Basic log
+      if (designerId == null) throw 'Project creator ID not found';
+
+      final designerDetails = await getUserDetails(designerId);
+      print('👥 Got designer details: ${designerDetails != null}'); // Basic log
+      if (designerDetails == null) throw 'Project creator details not found';
+
+      print('🔔 COMMENT NOTIFICATION DEBUG:');
+      print('Commenter email: ${userDetails['email']}');
+      print('Project creator email: ${designerDetails['email']}');
 
       // Create comment
       final comment = Comment(
@@ -142,12 +167,38 @@ class ProjectService {
 
       // Add comment to comments collection
       await _firestore.collection(_commentsCollection).add(comment.toMap());
+      print('💬 Comment added to database'); // Basic log
 
       // Increment comment count in project
       await _firestore.collection(_projectsCollection).doc(projectId).update({
         'commentCount': FieldValue.increment(1)
       });
+      print('📊 Comment count updated'); // Basic log
+
+      // Send notification to project creator
+      if (designerDetails['email'] != null) {
+        print('📧 Attempting to send notification to: ${designerDetails['email']}'); // Basic log
+        try {
+          // Check if user has enabled comment notifications
+          final shouldSendNotification = await ExploreNotificationSettings.getCommentNotifications();
+          if (shouldSendNotification) {
+            await _notificationHandler.sendNotification(
+              theEmail: designerDetails['email'],
+              title: 'New Comment on Your Project',
+              message: '${userDetails['name']} commented on your project "${projectData['title']}": $text',
+            );
+            print('✅ Comment notification sent to: ${designerDetails['email']}');
+          } else {
+            print('❌ Comment notifications disabled for user');
+          }
+        } catch (e) {
+          print('❌ Error sending comment notification: $e');
+        }
+      } else {
+        print('❌ Project creator email not found');
+      }
     } catch (e) {
+      print('❌ Error in addComment: $e');
       throw 'Failed to add comment: $e';
     }
   }
@@ -189,6 +240,43 @@ class ProjectService {
       if (!userLikeDoc.exists) {
         transaction.update(projectRef, {'likes': FieldValue.increment(1)});
         transaction.set(userLikesRef, {'liked': true, 'timestamp': FieldValue.serverTimestamp()});
+
+        // Send notification for like
+        final projectData = projectDoc.data();
+        if (projectData != null) {
+          final currentUserDetails = await getUserDetails(userId);
+          if (currentUserDetails != null) {
+            final designerId = projectData['designerId'];
+            if (designerId != null) {
+              final designerDetails = await getUserDetails(designerId);
+              
+              print('🔔 LIKE NOTIFICATION DEBUG:');
+              print('Liker email: ${currentUserDetails['email']}');
+              print('Project creator email: ${designerDetails?['email']}');
+              
+              if (designerDetails != null && designerDetails['email'] != null) {
+                // Check if user has enabled like notifications
+                final shouldSendNotification = await ExploreNotificationSettings.getLikeNotifications();
+                if (shouldSendNotification) {
+                  try {
+                    await _notificationHandler.sendNotification(
+                      theEmail: designerDetails['email'],
+                      title: 'New Like',
+                      message: '${currentUserDetails['name']} liked your project "${projectData['title']}"',
+                    );
+                    print('✅ Like notification sent to: ${designerDetails['email']}');
+                  } catch (e) {
+                    print('❌ Error sending like notification: $e');
+                  }
+                } else {
+                  print('❌ Like notifications disabled for user');
+                }
+              } else {
+                print('❌ Project creator email not found');
+              }
+            }
+          }
+        }
       } else {
         transaction.update(projectRef, {'likes': FieldValue.increment(-1)});
         transaction.delete(userLikesRef);
@@ -277,9 +365,57 @@ class ProjectService {
       await docRef.set({
         ...project.toMap(),
         'title_lower': title.toLowerCase(),
+        'designerEmail': userDetails['email'],
       });
+
+      // Get all followers
+      final followersQuery = await _firestore
+          .collection('userFollows')
+          .where('targetUserId', isEqualTo: user.uid)
+          .get();
+
+      print('Found ${followersQuery.docs.length} followers'); // Debug log
+
+      // Notify each follower
+      for (var followerDoc in followersQuery.docs) {
+        try {
+          final followerData = followerDoc.data();
+          final followerId = followerData['followerId'];
+          
+          print('Processing follower: $followerId'); // Debug log
+          
+          if (followerId != null) {
+            final followerDetails = await getUserDetails(followerId);
+            
+            print('Follower details: ${followerDetails != null ? 'Found' : 'Not found'}'); // Debug log
+            
+            if (followerDetails != null && followerDetails['email'] != null) {
+              print('Sending notification to: ${followerDetails['email']}'); // Debug log
+              
+              // Check if user has enabled project notifications
+              final shouldSendNotification = await ExploreNotificationSettings.getProjectNotifications();
+              if (shouldSendNotification) {
+                await _notificationHandler.sendNotification(
+                  theEmail: followerDetails['email'],
+                  title: 'New Project from ${userDetails['name']}',
+                  message: '${userDetails['name']} just posted a new project: $title',
+                );
+                print('Notification sent successfully'); // Debug log
+              } else {
+                print('❌ Project notifications disabled for user');
+              }
+            }
+          }
+        } catch (e) {
+          print('Error sending notification to follower: $e'); // Debug log
+          // Continue with next follower even if one fails
+          continue;
+        }
+      }
+
       return docRef.id;
     } catch (e) {
+      print('Error in uploadProject: $e'); // Debug log
       throw 'Failed to upload project: $e';
     }
   }
@@ -298,5 +434,95 @@ class ProjectService {
         .map((snapshot) {
           return snapshot.docs.map((doc) => Project.fromFirestore(doc)).toList();
         });
+  }
+
+  // Get all projects by a specific user
+  Stream<List<Project>> getUserProjects(String userId) {
+    return _firestore
+        .collection(_projectsCollection)
+        .where('designerId', isEqualTo: userId)
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs.map((doc) => Project.fromFirestore(doc)).toList();
+    });
+  }
+
+  // Follow/Unfollow a user
+  Future<void> toggleFollow(String targetUserId) async {
+    final currentUser = _auth.currentUser;
+    if (currentUser == null) throw 'User not logged in';
+
+    final userFollowsRef = _firestore
+        .collection('userFollows')
+        .doc('${currentUser.uid}_$targetUserId');
+
+    final userDoc = await userFollowsRef.get();
+
+    if (userDoc.exists) {
+      // Unfollow
+      await userFollowsRef.delete();
+      await _firestore.collection('users').doc(targetUserId).update({
+        'followers': FieldValue.increment(-1)
+      });
+    } else {
+      // Follow
+      await userFollowsRef.set({
+        'followerId': currentUser.uid,
+        'targetUserId': targetUserId,
+        'timestamp': FieldValue.serverTimestamp(),
+      });
+      await _firestore.collection('users').doc(targetUserId).update({
+        'followers': FieldValue.increment(1)
+      });
+
+      // Get both users' details
+      final currentUserDetails = await getUserDetails(currentUser.uid);
+      final targetUserDetails = await getUserDetails(targetUserId);
+      
+      print('🔔 FOLLOW NOTIFICATION DEBUG:');
+      print('Current user (follower) email: ${currentUserDetails?['email']}');
+      print('Target user (being followed) email: ${targetUserDetails?['email']}');
+      
+      if (currentUserDetails != null && targetUserDetails != null && targetUserDetails['email'] != null) {
+        try {
+          // Check if user has enabled follow notifications
+          final shouldSendNotification = await ExploreNotificationSettings.getFollowNotifications();
+          if (shouldSendNotification) {
+            await _notificationHandler.sendNotification(
+              theEmail: targetUserDetails['email'],
+              title: 'New Follower',
+              message: '${currentUserDetails['name']} started following you!',
+            );
+            print('✅ Follow notification sent to: ${targetUserDetails['email']}');
+          } else {
+            print('❌ Follow notifications disabled for user');
+          }
+        } catch (e) {
+          print('❌ Error sending follow notification: $e');
+        }
+      } else {
+        print('❌ Missing user details for notification');
+      }
+    }
+  }
+
+  // Check if current user is following a user
+  Future<bool> isFollowing(String targetUserId) async {
+    final currentUser = _auth.currentUser;
+    if (currentUser == null) return false;
+
+    final doc = await _firestore
+        .collection('userFollows')
+        .doc('${currentUser.uid}_$targetUserId')
+        .get();
+    
+    return doc.exists;
+  }
+
+  // Get follower count
+  Future<int> getFollowerCount(String userId) async {
+    final doc = await _firestore.collection('users').doc(userId).get();
+    return doc.data()?['followers'] ?? 0;
   }
 } 

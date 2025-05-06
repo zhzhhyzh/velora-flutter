@@ -10,6 +10,8 @@ import 'upload_project_screen.dart';
 import 'project_details_screen.dart';
 import 'search_screen.dart';
 import 'dart:convert';
+import 'user_posts_screen.dart';
+import 'notification_screen.dart';
 
 class ExploreScreen extends StatefulWidget {
   const ExploreScreen({super.key});
@@ -233,7 +235,30 @@ class _ExploreScreenState extends State<ExploreScreen> {
     return Scaffold(
       bottomNavigationBar: BottomNavBar(currentIndex: 0),
       backgroundColor: Colors.white,
-      appBar: TheAppBar(content: 'Explore'),
+      appBar: AppBar(
+        title: const Text(
+          'Explore',
+          style: TextStyle(
+            color: Colors.black,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.notifications_outlined, color: Colors.black),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const NotificationScreen(),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           Navigator.push(
@@ -477,37 +502,52 @@ class _ExploreScreenState extends State<ExploreScreen> {
                           const SizedBox(height: 8),
                   Row(
                     children: [
-                              CircleAvatar(
-                        radius: 12,
-                                backgroundColor: const Color(0xFF689f77),
-                                child: designerDetails != null && designerDetails!['userImage'] != null
-                                  ? ClipRRect(
-                                      borderRadius: BorderRadius.circular(12),
-                                      child: Image.memory(
-                                        base64Decode(designerDetails!['userImage']),
-                                        width: 24,
-                                        height: 24,
-                                        fit: BoxFit.cover,
-                                      ),
-                                    )
-                                  : Text(
-                                      (designerDetails?['name'] ?? 'U')[0].toUpperCase(),
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 12,
-                                      ),
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => UserPostsScreen(
+                                userId: project.designerId,
+                                userName: designerDetails?['name'] ?? 'Unknown User',
+                              ),
+                            ),
+                          );
+                        },
+                        child: Row(
+                          children: [
+                            CircleAvatar(
+                              radius: 12,
+                              backgroundColor: const Color(0xFF689f77),
+                              child: designerDetails != null && designerDetails!['userImage'] != null
+                                ? ClipRRect(
+                                    borderRadius: BorderRadius.circular(12),
+                                    child: Image.memory(
+                                      base64Decode(designerDetails!['userImage']),
+                                      width: 24,
+                                      height: 24,
+                                      fit: BoxFit.cover,
                                     ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                                child: Text(
-                                  'By ${designerDetails?['name'] ?? 'Unknown User'}',
-                                  style: TextStyle(
-                                    color: Colors.grey.shade600,
-                                    fontSize: 14,
+                                  )
+                                : Text(
+                                    (designerDetails?['name'] ?? 'U')[0].toUpperCase(),
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 12,
+                                    ),
                                   ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'By ${designerDetails?['name'] ?? 'Unknown User'}',
+                              style: TextStyle(
+                                color: Colors.grey.shade600,
+                                fontSize: 14,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
                         ),
                       ),
                     ],
