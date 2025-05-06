@@ -90,7 +90,10 @@ class _CreateContestPageState extends State<CreateContestPage> {
       await LocalDatabase.insertContest(contest);
       await FirebaseFirestore.instance.collection('contests').doc(id).set({
         ...contest.toMap(),
-        'winnerEmail': '', // leave empty initially, will be set later
+        'startDate': contest.startDate.millisecondsSinceEpoch,
+        'endDate': contest.endDate.millisecondsSinceEpoch,
+        'createdAt': contest.createdAt.millisecondsSinceEpoch,
+        'winnerEmail': '',
         'winnerNotified': false,
       });
 

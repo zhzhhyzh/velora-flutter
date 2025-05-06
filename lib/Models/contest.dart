@@ -25,20 +25,19 @@ class Contest {
     required this.isActive,
   });
 
-  Map<String, dynamic> toMap() {
-    return {
-      'id': id,
-      'title': title,
-      'description': description,
-      'category': category,
-      'startDate': startDate.millisecondsSinceEpoch,
-      'endDate': endDate.millisecondsSinceEpoch,
-      'coverImagePath': coverImagePath,
-      'createdBy': createdBy,
-      'createdAt': createdAt.millisecondsSinceEpoch,
-      'isActive': isActive,
-    };
-  }
+  Map<String, dynamic> toMap() => {
+    'id': id,
+    'title': title,
+    'description': description,
+    'category': category,
+    'startDate': startDate.toIso8601String(),
+    'endDate': endDate.toIso8601String(),
+    'coverImagePath': coverImagePath,
+    'createdBy': createdBy,
+    'createdAt': createdAt.toIso8601String(),
+    'isActive': isActive ? 1 : 0,
+  };
+
 
   factory Contest.fromMap(Map<String, dynamic> map) {
     return Contest(
@@ -57,6 +56,19 @@ class Contest {
 
   factory Contest.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
-    return Contest.fromMap(data);
+
+    return Contest(
+      id: data['id'],
+      title: data['title'],
+      description: data['description'],
+      category: data['category'],
+      startDate: DateTime.fromMillisecondsSinceEpoch(data['startDate']),
+      endDate: DateTime.fromMillisecondsSinceEpoch(data['endDate']),
+      coverImagePath: data['coverImagePath'],
+      createdBy: data['createdBy'],
+      createdAt: DateTime.fromMillisecondsSinceEpoch(data['createdAt']),
+      isActive: data['isActive'] ?? true,
+    );
   }
+
 }

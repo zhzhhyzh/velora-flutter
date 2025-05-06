@@ -30,7 +30,7 @@ class _AllContestsScreenState extends State<AllContestsScreen> {
     'Logo Design', 'Animation Design'
   ];
 
-  List<Contest> _contests = [];
+  List<Map<String, dynamic>> _contestMaps = [];
   bool _isLoading = true;
 
   @override
@@ -49,7 +49,7 @@ class _AllContestsScreenState extends State<AllContestsScreen> {
 
     final querySnapshot = await FirebaseFirestore.instance
         .collection('contests')
-        .where('endDate', isLessThanOrEqualTo: DateTime.now())
+        .where('endDate', isLessThanOrEqualTo: DateTime.now().millisecondsSinceEpoch)
         .get();
 
     for (final doc in querySnapshot.docs) {
@@ -58,7 +58,6 @@ class _AllContestsScreenState extends State<AllContestsScreen> {
       final notified = (contest['winnerNotified'] ?? false);
 
       if (winnerEmail == userEmail && !notified) {
-        // Show in-app notification popup
         if (context.mounted) {
           await showDialog(
             context: context,
@@ -75,13 +74,11 @@ class _AllContestsScreenState extends State<AllContestsScreen> {
           );
         }
 
-        // Update the notification flag in Firestore
         await FirebaseFirestore.instance
             .collection('contests')
             .doc(doc.id)
             .update({'winnerNotified': true});
 
-        // Optionally trigger a local system notification
         await NotificationService.showNotification(
           title: "You won a contest!",
           body: "Congrats! You are the winner of ${contest['title']}",
@@ -92,15 +89,31 @@ class _AllContestsScreenState extends State<AllContestsScreen> {
 
   Future<void> _loadLocalContests() async {
     try {
-      final contests = await LocalDatabase.getContests();
+      final localContests = await LocalDatabase.getContests();
+      final localMaps = localContests.map((contest) => {
+        'doc': null,
+        'data': {
+          'id': contest.id,
+          'title': contest.title,
+          'description': contest.description,
+          'category': contest.category,
+          'startDate': contest.startDate.toIso8601String(),
+          'endDate': contest.endDate.toIso8601String(),
+          'coverImagePath': contest.coverImagePath,
+          'createdBy': contest.createdBy,
+          'createdAt': contest.createdAt.toIso8601String(),
+          'isActive': contest.isActive,
+        }
+      }).toList();
+
       if (mounted) {
         setState(() {
-          _contests = contests;
+          _contestMaps = localMaps;
           _isLoading = false;
         });
       }
     } catch (e) {
-      Text('Local DB error: $e');
+      debugPrint('Local DB error: $e');
       if (mounted) setState(() => _isLoading = false);
     }
   }
@@ -108,42 +121,74 @@ class _AllContestsScreenState extends State<AllContestsScreen> {
   Future<void> _fetchCloudContests() async {
     try {
       final snapshot = await FirebaseFirestore.instance.collection('contests').get();
-      final contests = snapshot.docs.map((doc) => Contest.fromFirestore(doc)).toList();
-      Text("Fetched ${contests.length} contests from Firebase");
+      final contestDocs = snapshot.docs;
+
+      final contests = contestDocs.map((doc) {
+        final data = doc.data();
+        return {
+          'doc': doc,
+          'data': {
+            ...data,
+            'startDate': DateTime.fromMillisecondsSinceEpoch(data['startDate']).toIso8601String(),
+            'endDate': DateTime.fromMillisecondsSinceEpoch(data['endDate']).toIso8601String(),
+            'createdAt': DateTime.fromMillisecondsSinceEpoch(data['createdAt']).toIso8601String(),
+          }
+        };
+      }).toList();
 
       await LocalDatabase.clearContests();
-      for (final contest in contests) {
-        await LocalDatabase.insertContest(contest);
+      for (final c in contests) {
+        final Map<String, dynamic> d = c['data'] as Map<String, dynamic>;
+
+        await LocalDatabase.insertContest(Contest(
+          id: d['id'],
+          title: d['title'],
+          description: d['description'],
+          category: d['category'],
+          startDate: DateTime.parse(d['startDate']),
+          endDate: DateTime.parse(d['endDate']),
+          coverImagePath: d['coverImagePath'],
+          createdBy: d['createdBy'],
+          createdAt: DateTime.parse(d['createdAt']),
+          isActive: d['isActive'] == true,
+        ));
       }
+
 
       if (mounted) {
         setState(() {
-          _contests = contests;
+          _contestMaps = contests;
           _isLoading = false;
         });
       }
-    } catch (e, st) {
-      Text('Error fetching contests: $e');
-      Text('Stacktrace: $st');
+    } catch (e) {
+      debugPrint('Error fetching contests: $e');
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  bool _isPast(Contest contest) => contest.endDate.isBefore(DateTime.now());
-  bool _isOnGoing(Contest contest) => contest.startDate.isBefore(DateTime.now()) && contest.endDate.isAfter(DateTime.now());
-  bool _isUpcoming(Contest contest) => contest.startDate.isAfter(DateTime.now());
+  List<Map<String, dynamic>> _getFilteredContests() {
+    final now = DateTime.now();
 
-  List<Contest> _getFilteredContests() {
-    return _contests.where((contest) {
-      if (_searchQuery.isNotEmpty &&
-          !(contest.title.toLowerCase().contains(_searchQuery) ||
-              contest.description.toLowerCase().contains(_searchQuery))) {
-        return false;
-      }
-      if (_selectedCategory != null && contest.category != _selectedCategory) return false;
-      if (selectedTab == 'Past') return _isPast(contest);
-      if (selectedTab == 'On Going') return _isOnGoing(contest);
-      return _isUpcoming(contest);
+    return _contestMaps.where((contestMap) {
+      final data = contestMap['data'] as Map<String, dynamic>;
+
+
+      final title = (data['title'] ?? '').toLowerCase();
+      final desc = (data['description'] ?? '').toLowerCase();
+      final cat = data['category'];
+
+      final start = DateTime.tryParse(data['startDate']);
+      final end = DateTime.tryParse(data['endDate']);
+
+      final matchesSearch = _searchQuery.isEmpty || title.contains(_searchQuery) || desc.contains(_searchQuery);
+      final matchesCat = _selectedCategory == null || _selectedCategory == cat;
+
+      if (!matchesSearch || !matchesCat || start == null || end == null) return false;
+
+      if (selectedTab == 'Past') return end.isBefore(now);
+      if (selectedTab == 'On Going') return start.isBefore(now) && end.isAfter(now);
+      return start.isAfter(now);
     }).toList();
   }
 
@@ -176,27 +221,26 @@ class _AllContestsScreenState extends State<AllContestsScreen> {
     );
   }
 
-  String _getStatusLabel(Contest contest) {
+  String _getStatusLabel(DateTime start, DateTime end) {
     final now = DateTime.now();
-    if (_isPast(contest)) {
-      return "Ended";
-    } else if (_isOnGoing(contest)) {
-      final daysLeft = contest.endDate.difference(now).inDays;
+    if (end.isBefore(now)) return "Ended";
+    if (start.isBefore(now) && end.isAfter(now)) {
+      final daysLeft = end.difference(now).inDays;
       return "$daysLeft day${daysLeft != 1 ? 's' : ''} left";
-    } else {
-      return "Starts on ${DateFormat('dd MMM').format(contest.startDate)}";
     }
+    return "Starts on ${DateFormat('dd MMM').format(start)}";
   }
 
+  Widget _buildContestCard(Map<String, dynamic> contestMap) {
+    final data = contestMap['data'] as Map<String, dynamic>;
 
-  Widget _buildContestCard(Contest contest) {
+    DateTime startDate = DateTime.tryParse(data['startDate']) ?? DateTime.now();
+    DateTime endDate = DateTime.tryParse(data['endDate']) ?? DateTime.now();
+
     Widget imageWidget;
     try {
-      imageWidget = contest.coverImagePath.isNotEmpty
-          ? Image.memory(
-        base64Decode(contest.coverImagePath),
-        fit: BoxFit.cover,
-      )
+      imageWidget = data['coverImagePath'] != null && (data['coverImagePath'] as String).isNotEmpty
+          ? Image.memory(base64Decode(data['coverImagePath']), fit: BoxFit.cover)
           : const Icon(Icons.image, color: Colors.grey);
     } catch (e) {
       imageWidget = const Icon(Icons.broken_image, color: Colors.grey);
@@ -206,12 +250,20 @@ class _AllContestsScreenState extends State<AllContestsScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       child: InkWell(
         onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => ContestDetailPage(contest: contest),
-            ),
+          final contest = Contest(
+            id: data['id'],
+            title: data['title'],
+            description: data['description'],
+            category: data['category'],
+            startDate: startDate,
+            endDate: endDate,
+            coverImagePath: data['coverImagePath'],
+            createdBy: data['createdBy'],
+            createdAt: DateTime.tryParse(data['createdAt']) ?? DateTime.now(),
+            isActive: data['isActive'] == true,
           );
+
+          Navigator.push(context, MaterialPageRoute(builder: (_) => ContestDetailPage(contest: contest)));
         },
         child: Container(
           decoration: BoxDecoration(
@@ -225,7 +277,7 @@ class _AllContestsScreenState extends State<AllContestsScreen> {
                 height: 60,
                 margin: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: Color(0xFF689f77),
+                  color: const Color(0xFF689f77),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: ClipRRect(
@@ -240,23 +292,16 @@ class _AllContestsScreenState extends State<AllContestsScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        contest.title,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
+                        data['title'] ?? '',
+                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 4),
                       Row(
                         children: [
                           Expanded(
                             child: Text(
-                              contest.category.toUpperCase(),
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: Colors.black54,
-                                fontWeight: FontWeight.w500,
-                              ),
+                              data['category']?.toString().toUpperCase() ?? '',
+                              style: const TextStyle(fontSize: 12, color: Colors.black54, fontWeight: FontWeight.w500),
                             ),
                           ),
                           Container(
@@ -265,16 +310,12 @@ class _AllContestsScreenState extends State<AllContestsScreen> {
                             margin: const EdgeInsets.all(10),
                             alignment: Alignment.center,
                             decoration: BoxDecoration(
-                              color: Color(0xFF689f77),
+                              color: const Color(0xFF689f77),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Text(
-                              _getStatusLabel(contest),
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: Colors.white,
-                                fontWeight: FontWeight.w600,
-                              ),
+                              _getStatusLabel(startDate, endDate),
+                              style: const TextStyle(fontSize: 12, color: Colors.white, fontWeight: FontWeight.w600),
                             ),
                           ),
                         ],
@@ -300,7 +341,6 @@ class _AllContestsScreenState extends State<AllContestsScreen> {
       bottomNavigationBar: BottomNavBar(currentIndex: 1),
       body: Column(
         children: [
-          // Search bar with filter
           Padding(
             padding: const EdgeInsets.all(8.0),
             child: TextField(
@@ -333,8 +373,6 @@ class _AllContestsScreenState extends State<AllContestsScreen> {
               onChanged: (value) => setState(() => _searchQuery = value.toLowerCase()),
             ),
           ),
-
-          // Tab buttons
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8.0),
             child: Row(
@@ -355,8 +393,6 @@ class _AllContestsScreenState extends State<AllContestsScreen> {
               }).toList(),
             ),
           ),
-
-          // Header + Create Contest
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
             child: Row(
@@ -377,8 +413,6 @@ class _AllContestsScreenState extends State<AllContestsScreen> {
               ],
             ),
           ),
-
-          // List view
           Expanded(
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
