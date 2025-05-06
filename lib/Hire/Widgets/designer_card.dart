@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import '../designer_detail.dart';
+import 'package:path/path.dart';
 
 class DesignerCard extends StatelessWidget {
   final Map<String,dynamic> data;
@@ -19,7 +21,7 @@ class DesignerCard extends StatelessWidget {
     final location = [
       data['country']?.toString(),
       data['state']?.toString()
-    ].where((e) => e != null && e.trim().isNotEmpty).join(',');
+    ].where((e) => e != null && e.trim().isNotEmpty).join(', ');
 
     final List portfolioImgs = data['portfolioImg'] is List
         ? data['portfolioImg']  // if is Array in firestore, it assign as List
@@ -32,10 +34,10 @@ class DesignerCard extends StatelessWidget {
       child: InkWell(
         onTap: () {
           if (doc != null) {
-            // Navigator.push(
-            //   context,
-            //   MaterialPageRoute(builder: (_) => DesignerDetailScreen(designer: doc!)),
-            // );
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => DesignerDetailScreen(designer: doc!)),
+            );
           } else {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text("This designer is not available now."))
@@ -46,8 +48,19 @@ class DesignerCard extends StatelessWidget {
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             color: Colors.white,
-            border: Border.all(color: Colors.black),
             borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black26,
+                blurRadius: 2,
+                offset: Offset(3, 1),
+              ),
+              BoxShadow(
+                color: Colors.black26,
+                blurRadius: 2,
+                offset: Offset(-3, 0),
+              )
+            ]
           ),
           child: Column(
             children: [
@@ -66,31 +79,56 @@ class DesignerCard extends StatelessWidget {
                         Text(
                           data['name'] ?? 'Designer Name',
                           style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                         ),
                         const SizedBox(height: 4,),
-                        Row(
-                          children: [
-                            Text(
-                              'From \$${data['fee']}/ project',
-                              style: TextStyle(fontSize: 14, color: Colors.grey),
-                            ),
-                          ],
-                        )
+                        Text(
+                          'From \$${data['fee']}/ project',
+                          style: TextStyle(fontSize: 12, color: Colors.grey),
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ],
                     ),
                   ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      SizedBox(height: 25,),
-                      Row(
-                        children: [
-                          const Icon(Icons.location_on, size: 16, color: Colors.grey),
-                          const SizedBox(width: 4,),
-                          Text(location, style: TextStyle(fontSize: 14, color: Colors.black)),
-                        ],
-                      )
-                    ],
+                  SizedBox(
+                    width: 100,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        SizedBox(
+                          width: 100,
+                          height: 25,
+                          child: Container(
+                            padding: EdgeInsets.symmetric(vertical: 2, horizontal: 8),
+                            color: Colors.green.shade100,
+                            child: Center(
+                              child: Text(
+                                data['category'] ?? 'Designer Category',
+                                style:TextStyle(fontSize: 11,color: Colors.black, fontWeight: FontWeight.bold),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: 4,),
+                        Row(
+                          children: [
+                            const Icon(Icons.location_on, size: 16, color: Colors.grey),
+                            const SizedBox(width: 4,),
+                            Expanded(child:
+                              Text(
+                                location,
+                                style: TextStyle(fontSize: 12, color: Colors.black),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            )
+                          ],
+                        ),
+                      ],
+                    )
                   ),
                 ],
               ),
@@ -117,7 +155,7 @@ class DesignerCard extends StatelessWidget {
                   ),
                 )
               else
-                const Text('No portfolio images available'),
+                const Center(child: Text('No portfolio images available')),
             ],
           ),
 

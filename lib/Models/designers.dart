@@ -6,6 +6,8 @@ class DesignerModel {
   final String location;
   final String profileImg;
   final List<String> portfolioImg;
+  final String? about;
+  final String? slogan;
 
   DesignerModel({
     required this.id,
@@ -15,17 +17,21 @@ class DesignerModel {
     required this.location,
     required this.profileImg,
     required this.portfolioImg,
-});
+    this.about,
+    this.slogan,
+  });
 
-  Map<String,dynamic> toMap() {
+  Map<String, dynamic> toMap() {
     return {
-      'id' : id,
-      'name' : name,
-      'fee' : fee,
-      'category' : category,
-      'location' : location,
-      'profileImg' : profileImg,
-      'portfolioImg' : List<String>.from(portfolioImg),
+      'id': id,
+      'name': name,
+      'fee': fee,
+      'category': category,
+      'location': location,
+      'profileImg': profileImg,
+      'portfolioImg': List<String>.from(portfolioImg),
+      'about': about,
+      'slogan': slogan,
     };
   }
 
@@ -38,6 +44,8 @@ class DesignerModel {
       location: data['location'],
       profileImg: data['profileImg'],
       portfolioImg: List<String>.from(data['portfolioImg']),
+      about: data['about'] ?? 'No information provided.',
+      slogan: data['slogan'] ?? '',
     );
   }
 }
