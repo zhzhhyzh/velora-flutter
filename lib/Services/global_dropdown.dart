@@ -44,5 +44,15 @@ class GlobalDD{
     'Other',
   ];
 
+  static final List<String> designCategoryList = [
+    'Web Design',
+    'Illustration',
+    'Animation',
+    'Branding',
+    'Print',
+    'Product Design',
+    'Mobile',
+    'Typography'
+  ];
 
 }

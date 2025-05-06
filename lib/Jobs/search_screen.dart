@@ -251,13 +251,16 @@ class _AllJobsScreenState extends State<AllJobsScreen> {
       filled: true,
       fillColor: Colors.black54,
       hintStyle: const TextStyle(color: Color(0xFFb9b9b9)),
-      enabledBorder: const UnderlineInputBorder(
+      enabledBorder: UnderlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.black)
+      ),
+      focusedBorder: UnderlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
         borderSide: BorderSide(color: Colors.black),
       ),
-      focusedBorder: const UnderlineInputBorder(
-        borderSide: BorderSide(color: Colors.black),
-      ),
-      errorBorder: const UnderlineInputBorder(
+      errorBorder: UnderlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
         borderSide: BorderSide(color: Colors.red),
       ),
     );

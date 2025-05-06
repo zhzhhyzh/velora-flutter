@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:path/path.dart';
 
 class DesignerCard extends StatelessWidget {
   final Map<String,dynamic> data;
@@ -46,8 +47,19 @@ class DesignerCard extends StatelessWidget {
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             color: Colors.white,
-            border: Border.all(color: Colors.black),
             borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black26,
+                blurRadius: 2,
+                offset: Offset(3, 1),
+              ),
+              BoxShadow(
+                color: Colors.black26,
+                blurRadius: 2,
+                offset: Offset(-3, 0),
+              )
+            ]
           ),
           child: Column(
             children: [
@@ -82,7 +94,15 @@ class DesignerCard extends StatelessWidget {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      SizedBox(height: 25,),
+                      Container(
+                        padding: EdgeInsets.symmetric(vertical: 2, horizontal: 8),
+                        color: Colors.green.shade100,
+                        child: Text(
+                            data['category'] ?? 'Designer Category',
+                            style:TextStyle(fontSize: 14,color: Colors.black)
+                        ),
+                      ),
+                      SizedBox(height: 2,),
                       Row(
                         children: [
                           const Icon(Icons.location_on, size: 16, color: Colors.grey),
