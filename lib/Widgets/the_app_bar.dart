@@ -30,46 +30,20 @@ class TheAppBar extends StatelessWidget implements PreferredSizeWidget {
                 onPressed: () => Navigator.pop(context),
               )
               : null,
-      actions: [
-        if (style == 1)
-          Stack(
-            children: [
-              IconButton(
-                icon: const Icon(Icons.notifications_none, color: Colors.black),
-                onPressed: () {
-                  // TODO: Navigate to notifications screen
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Notifications tapped')),
-                  );
-                },
-              ),
-              // Optional: red dot indicator
-              Positioned(
-                right: 11,
-                top: 11,
-                child: Container(
-                  width: 8,
-                  height: 8,
-                  decoration: const BoxDecoration(
-                    color: Colors.red,
-                    shape: BoxShape.circle,
-                  ),
+      actions:
+          style == 2 && content != 'About Velora'
+              ? [
+                IconButton(
+                  icon: const Icon(Icons.info_outline, color: Colors.black),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => InfoScreen()),
+                    );
+                  },
                 ),
-              ),
-            ],
-          )
-        else if (style == 2 && content != 'About Velora')
-          IconButton(
-            icon: const Icon(Icons.info_outline, color: Colors.black),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => InfoScreen()),
-              );
-            },
-          ),
-      ],
-
+              ]
+              : [],
       flexibleSpace: Container(
         decoration:   style == 2 ? const BoxDecoration(color: Color(0xff689f77)): const BoxDecoration(color: Color(0xffffffff)),
       ),
