@@ -17,6 +17,8 @@ class UserState extends StatefulWidget {
 
 class _UserStateState extends State<UserState> with WidgetsBindingObserver {
   final AppLifecycleHandler _lifecycleHandler = AppLifecycleHandler();
+  final ValueNotifier<bool> hasUnreadNotifications = ValueNotifier(false);
+
   User? _currentUser;
   StreamSubscription<QuerySnapshot>? _notificationSubscription;
 
@@ -34,7 +36,7 @@ class _UserStateState extends State<UserState> with WidgetsBindingObserver {
   }
 
   void _startNotificationListener(User user) {
-    if (_notificationSubscription != null) return; // avoid multiple listeners
+    if (_notificationSubscription != null) return;
 
     _notificationSubscription = FirebaseFirestore.instance
         .collection('notifications')
@@ -42,26 +44,28 @@ class _UserStateState extends State<UserState> with WidgetsBindingObserver {
         .where('isRead', isEqualTo: false)
         .snapshots()
         .listen((snapshot) {
+      if (snapshot.docs.isNotEmpty) {
+        hasUnreadNotifications.value = true;
+      }
+
       for (var doc in snapshot.docs) {
         final data = doc.data();
         final title = data['title']?.toString() ?? 'No Title';
         final body = data['body']?.toString() ?? '';
 
-        print('🔔 Incoming Firestore Notification: $title | $body');
-
         NotificationService.showNotification(
           title: title,
           body: body,
         ).then((_) {
-          // Mark as read only if showNotification succeeded
           doc.reference.update({'isRead': true});
-          print('✅ Local notification shown and marked as read.');
+          hasUnreadNotifications.value = false;
         }).catchError((e) {
           print('❌ Failed to show notification: $e');
         });
       }
     });
   }
+
 
 
   @override

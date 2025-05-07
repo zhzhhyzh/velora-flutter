@@ -1,7 +1,8 @@
 import 'dart:io';
+import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
-class NotificationService {
+class NotificationService extends ChangeNotifier {
   static final FlutterLocalNotificationsPlugin _flutterLocalNotificationsPlugin =
   FlutterLocalNotificationsPlugin();
 
@@ -36,6 +37,27 @@ class NotificationService {
     }
   }
 
+  // 🟡 UNREAD COUNTER MANAGEMENT
+  int _unreadCount = 0;
+
+  int get unreadCount => _unreadCount;
+
+  void incrementUnread() {
+    _unreadCount++;
+    notifyListeners();
+  }
+
+  void setUnreadCount(int count) {
+    _unreadCount = count;
+    notifyListeners();
+  }
+
+  void clearUnread() {
+    _unreadCount = 0;
+    notifyListeners();
+  }
+
+  // 🟢 SHOW SYSTEM NOTIFICATION
   static Future<void> showNotification({
     required String title,
     required String body,
