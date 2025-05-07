@@ -36,7 +36,7 @@ class _UserStateState extends State<UserState> with WidgetsBindingObserver {
   }
 
   void _startNotificationListener(User user) {
-    if (_notificationSubscription != null) return;
+    _notificationSubscription?.cancel(); // Cancel any existing listener to avoid duplication
 
     _notificationSubscription = FirebaseFirestore.instance
         .collection('notifications')
@@ -58,10 +58,14 @@ class _UserStateState extends State<UserState> with WidgetsBindingObserver {
           body: body,
         ).then((_) {
           doc.reference.update({'isRead': true});
-          hasUnreadNotifications.value = false;
         }).catchError((e) {
           print('❌ Failed to show notification: $e');
         });
+      }
+
+      // Reset badge if all notifications processed
+      if (snapshot.docs.isEmpty) {
+        hasUnreadNotifications.value = false;
       }
     });
   }
