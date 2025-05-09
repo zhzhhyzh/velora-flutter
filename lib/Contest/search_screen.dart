@@ -37,30 +37,76 @@ class _AllContestsScreenState extends State<AllContestsScreen> {
   @override
   void initState() {
     super.initState();
+
+
     _loadLocalContests();
     _fetchCloudContests();
-    _checkContestWinnerNotification();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      debugPrint('🟢 Post-frame callback started');
+      _checkContestWinnerNotification();
+    });
   }
 
   Future<void> _checkContestWinnerNotification() async {
+    debugPrint('🔥 _checkContestWinnerNotification() invoked');
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
     final userEmail = user.email;
-    final notificationHandler = NotificationHandler(); // Instantiate the NotificationHandler
+    final notificationHandler = NotificationHandler();
 
-    final querySnapshot = await FirebaseFirestore.instance
+    final contestSnapshot = await FirebaseFirestore.instance
         .collection('contests')
         .where('endDate', isLessThanOrEqualTo: DateTime.now().millisecondsSinceEpoch)
         .get();
 
-    for (final doc in querySnapshot.docs) {
-      final contest = doc.data();
-      final winnerEmail = contest['winnerEmail'];
-      final contestTitle = contest['title'];
-      final notified = (contest['winnerNotified'] ?? false);
+    for (final contestDoc in contestSnapshot.docs) {
+      final contestData = contestDoc.data();
+      final contestId = contestDoc.id;
+      final contestTitle = contestData['title'];
+      final notified = contestData['winnerNotified'] ?? false;
 
-      if (winnerEmail == userEmail && !notified) {
+      // Skip if already notified
+      if (notified == true) continue;
+
+      debugPrint('🎯 Checking contest: $contestTitle');
+
+      // Fetch entries for this contest
+      final entriesSnapshot = await contestDoc.reference.collection('entries').get();
+
+      // Map of entryId -> voteCount
+      Map<String, int> voteCounts = {};
+      Map<String, String> entryOwners = {};
+
+      for (final entryDoc in entriesSnapshot.docs) {
+        final entryData = entryDoc.data();
+        final votes = (entryData['votes'] as List?)?.cast<String>() ?? [];
+        voteCounts[entryDoc.id] = votes.length;
+
+        // Assuming `createdBy` or `userEmail` identifies the owner
+        entryOwners[entryDoc.id] = votes.isNotEmpty ? votes.last : ''; // Simplified assumption
+      }
+
+      if (voteCounts.isEmpty) {
+        debugPrint('⚠️ No entries or votes for contest: $contestTitle');
+        continue;
+      }
+
+      // Find the entry with the most votes
+      final winningEntryId = voteCounts.entries.reduce((a, b) => a.value >= b.value ? a : b).key;
+      final winnerEmail = entryOwners[winningEntryId] ?? '';
+
+      debugPrint('🏆 Winning entry: $winningEntryId with $winnerEmail');
+
+      // Update winnerEmail to contest
+      await contestDoc.reference.update({
+        'winnerEmail': winnerEmail,
+        'winnerNotified': true,
+      });
+
+      // Notify winner
+      if (userEmail == winnerEmail) {
         if (context.mounted) {
           await showDialog(
             context: context,
@@ -77,43 +123,26 @@ class _AllContestsScreenState extends State<AllContestsScreen> {
           );
         }
 
-        await FirebaseFirestore.instance
-            .collection('contests')
-            .doc(doc.id)
-            .update({'winnerNotified': true});
-
-        // Send local push notification
         await NotificationService.showNotification(
           title: "You won a contest!",
           body: "Congrats! You are the winner of $contestTitle",
         );
 
-        // Send in-app notification using NotificationHandler
         await notificationHandler.sendNotification(
-          theEmail: userEmail,
+          theEmail: userEmail!,
           title: "You Won!",
-          message: "Congratulations! You are the winner of the '$contestTitle' contest.",
+          message: "You are the winner of the '$contestTitle' contest!",
         );
-      } else if (winnerEmail != null && winnerEmail.isNotEmpty && notified == false) {
-        // If the current user didn't win, but a winner exists and hasn't been notified,
-        // we can send a general notification about the contest ending.
-        // You might want to customize this further based on your app's needs.
-        final creatorEmail = contest['createdBy'];
-        if (creatorEmail == userEmail) {
-          // Notify the creator that the contest has ended and a winner was chosen
-          await notificationHandler.sendNotification(
-            theEmail: creatorEmail,
-            title: "Contest Ended",
-            message: "The '$contestTitle' contest has ended, and a winner has been selected.",
-          );
-          await FirebaseFirestore.instance
-              .collection('contests')
-              .doc(doc.id)
-              .update({'winnerNotified': true}); // Mark as notified for the creator too
-        }
+      } else if (contestData['createdBy'] == userEmail) {
+        await notificationHandler.sendNotification(
+          theEmail: userEmail!,
+          title: "Contest Ended",
+          message: "The contest '$contestTitle' has ended. A winner was chosen.",
+        );
       }
     }
   }
+
   Future<void> _loadLocalContests() async {
     try {
       final localContests = await LocalDatabase.getContests();

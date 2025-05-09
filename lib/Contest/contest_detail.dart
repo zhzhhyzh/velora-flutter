@@ -21,6 +21,8 @@ class ContestDetailPage extends StatefulWidget {
 
 class _ContestDetailPageState extends State<ContestDetailPage> {
   late String contestId;
+  Set<String> _loadingEntries = {};
+
   List<Map<String, dynamic>> entries = [];
   bool _isLoading = true;
 
@@ -57,6 +59,12 @@ class _ContestDetailPageState extends State<ContestDetailPage> {
   }
 
   Future<void> _voteEntry(String entryId, bool hasVoted) async {
+    if (_loadingEntries.contains(entryId)) return;
+
+    setState(() {
+      _loadingEntries.add(entryId);
+    });
+
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
@@ -66,22 +74,31 @@ class _ContestDetailPageState extends State<ContestDetailPage> {
         .collection('entries')
         .doc(entryId);
 
-    await FirebaseFirestore.instance.runTransaction((transaction) async {
-      final snapshot = await transaction.get(entryRef);
-      if (!snapshot.exists) return;
+    try {
+      await FirebaseFirestore.instance.runTransaction((transaction) async {
+        final snapshot = await transaction.get(entryRef);
+        if (!snapshot.exists) return;
 
-      final votes = List<String>.from(snapshot['votes'] ?? []);
-      if (hasVoted) {
-        votes.remove(user.email);
-      } else {
-        votes.add(user.email!);
-      }
+        final votes = List<String>.from(snapshot['votes'] ?? []);
+        if (hasVoted) {
+          votes.remove(user.email);
+        } else {
+          votes.add(user.email!);
+        }
 
-      transaction.update(entryRef, {'votes': votes});
-    });
+        transaction.update(entryRef, {'votes': votes});
+      });
 
-    await _fetchEntries();
+      await _fetchEntries();
+    } catch (e) {
+      debugPrint('Voting error: $e');
+    } finally {
+      setState(() {
+        _loadingEntries.remove(entryId);
+      });
+    }
   }
+
 
   bool get isOnGoing {
     final now = DateTime.now();
@@ -100,15 +117,6 @@ class _ContestDetailPageState extends State<ContestDetailPage> {
         ? DateFormat('dd MMM yyyy, hh:mm a').format((entry['createdAt'] as Timestamp).toDate())
         : 'Unknown date';
 
-    final hasVoted = _hasUserVoted(entry);
-
-    Uint8List? imageBytes;
-    if (entry['coverImage'] != null) {
-      try {
-        imageBytes = base64Decode(entry['coverImage']);
-      } catch (_) {}
-    }
-
     final votesCount = (entry['votes'] as List?)?.length ?? 0;
     final topLabel = switch (index) {
       0 => 'Top 1',
@@ -116,6 +124,16 @@ class _ContestDetailPageState extends State<ContestDetailPage> {
       2 => 'Top 3',
       _ => null,
     };
+
+    final hasVoted = _hasUserVoted(entry);
+    final isVoting = _loadingEntries.contains(entry['id']);
+
+    Uint8List? imageBytes;
+    if (entry['coverImage'] != null) {
+      try {
+        imageBytes = base64Decode(entry['coverImage']);
+      } catch (_) {}
+    }
 
     return GestureDetector(
       onTap: () {
@@ -187,9 +205,26 @@ class _ContestDetailPageState extends State<ContestDetailPage> {
                           style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
                         ElevatedButton.icon(
-                          onPressed: isOnGoing ? () => _voteEntry(entry['id'], hasVoted) : null,
-                          icon: Icon(hasVoted ? Icons.how_to_vote : Icons.how_to_vote_outlined),
-                          label: Text(hasVoted ? 'Unvote' : 'Vote'),
+                          onPressed: isOnGoing && !isVoting
+                              ? () => _voteEntry(entry['id'], hasVoted)
+                              : null,
+                          icon: isVoting
+                              ? const SizedBox(
+                            height: 16,
+                            width: 16,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
+                          )
+                              : Icon(
+                            hasVoted ? Icons.how_to_vote : Icons.how_to_vote_outlined,
+                            color: Colors.white,
+                          ),
+                          label: Text(
+                            hasVoted ? 'Unvote' : 'Vote',
+                            style: const TextStyle(color: Colors.white),
+                          ),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: isOnGoing
                                 ? (hasVoted ? Colors.red : const Color(0xFF689f77))

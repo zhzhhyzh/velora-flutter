@@ -149,8 +149,8 @@ class _DesignDetailPageState extends State<DesignDetailPage> {
                         ),
                         ElevatedButton.icon(
                           onPressed: isOnGoing ? () => _toggleVote(votes) : null,
-                          icon: Icon(hasVoted ? Icons.how_to_vote : Icons.how_to_vote_outlined),
-                          label: Text(hasVoted ? "Unvote" : "Vote"),
+                          icon: Icon(hasVoted ? Icons.how_to_vote : Icons.how_to_vote_outlined, color: Colors.white,),
+                          label: Text(hasVoted ? "Unvote" : "Vote", style: TextStyle(color: Colors.white),),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: isOnGoing
                                 ? (hasVoted ? Colors.red : const Color(0xFF689f77))

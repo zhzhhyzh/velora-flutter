@@ -1,9 +1,12 @@
 import 'dart:io';
+import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
-class NotificationService {
+class NotificationService extends ChangeNotifier {
   static final FlutterLocalNotificationsPlugin _flutterLocalNotificationsPlugin =
   FlutterLocalNotificationsPlugin();
+
+  final List<Map<String, dynamic>> _notifications = [];
 
   static Future<void> init() async {
     const AndroidInitializationSettings initializationSettingsAndroid =
@@ -21,13 +24,11 @@ class NotificationService {
 
     if (Platform.isAndroid) {
       await _flutterLocalNotificationsPlugin
-          .resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin>()
+          .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
           ?.requestNotificationsPermission();
     } else if (Platform.isIOS) {
       await _flutterLocalNotificationsPlugin
-          .resolvePlatformSpecificImplementation<
-          IOSFlutterLocalNotificationsPlugin>()
+          .resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>()
           ?.requestPermissions(
         alert: true,
         badge: true,
@@ -36,6 +37,55 @@ class NotificationService {
     }
   }
 
+  // 🟡 UNREAD COUNTER MANAGEMENT
+  int _unreadCount = 0;
+
+  int get unreadCount => _unreadCount;
+
+  List<Map<String, dynamic>> get notifications => List.unmodifiable(_notifications);
+
+  void incrementUnread() {
+    _unreadCount++;
+    notifyListeners();
+  }
+
+  void setUnreadCount(int count) {
+    _unreadCount = count;
+    notifyListeners();
+  }
+
+  void clearUnread() {
+    _unreadCount = 0;
+    notifyListeners();
+  }
+
+  void addNotification(Map<String, dynamic> notification) {
+    _notifications.add(notification);
+    if (notification['isRead'] == false) {
+      _unreadCount++;
+      notifyListeners();
+    }
+  }
+
+  void updateNotificationStatus(String id, bool isRead) {
+    final index = _notifications.indexWhere((n) => n['id'] == id);
+    if (index != -1) {
+      final currentStatus = _notifications[index]['isRead'];
+      if (currentStatus != isRead) {
+        _notifications[index]['isRead'] = isRead;
+
+        if (isRead && _unreadCount > 0) {
+          _unreadCount--;
+        } else if (!isRead) {
+          _unreadCount++;
+        }
+
+        notifyListeners();
+      }
+    }
+  }
+
+  // 🟢 SHOW SYSTEM NOTIFICATION
   static Future<void> showNotification({
     required String title,
     required String body,
