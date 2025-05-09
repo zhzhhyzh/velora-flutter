@@ -189,7 +189,7 @@ import 'package:velora2/Hire/edit_desinger_form.dart';
             ),
             const Divider(thickness: 1),
             Padding(
-              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              padding: EdgeInsets.only(left: 20,right: 20, top: 5,bottom: 15),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -239,9 +239,9 @@ import 'package:velora2/Hire/edit_desinger_form.dart';
                       onPressed: () => checkAndNavigateToDesignerForm(context),
                       color: const Color(0xff689f77),
                       elevation: 8,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(50)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
                       child: Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 15,vertical: 10),
+                        padding: EdgeInsets.all(10),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
@@ -259,9 +259,9 @@ import 'package:velora2/Hire/edit_desinger_form.dart';
                       },
                       color: const Color(0xff689f77),
                       elevation: 8,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(50)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
                       child: Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 20,vertical: 15),
+                        padding: EdgeInsets.all(10),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
