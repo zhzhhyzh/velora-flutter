@@ -62,11 +62,17 @@ class _RegisterDesignerState extends State<RegisterOrEditDesigner> {
   final TextEditingController _contactController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   File? profileImage;
+  List<File?> fetchedWorkImages = [];
 
 
   @override
-  void initState() {
+  void iniState() {
     super.initState();
+    _loadDesignerData();
+
+  }
+
+  Future<void> _loadDesignerData() async {
     if (widget.designerData != null) {
       final data = widget.designerData!.data() as Map<String, dynamic>;
       _designerNameController.text = data['name'] ?? '';
@@ -79,12 +85,24 @@ class _RegisterDesignerState extends State<RegisterOrEditDesigner> {
       _contactController.text = data['contact'] ?? '';
       _emailController.text = data['email'] ?? '';
 
-      if (data['jobImage'] != null) {
+      if (data['profileImg'] != null) {
         _convertBase64ToFile(data['profileImg'], 'profileImg.png').then((file) {
           setState(() {
             profileImage = file;
           });
         });
+      }
+
+      if (data['workImgs'] != null) {
+        for (var imageBase64 in data['workImgs']) {
+          if (imageBase64 != null) {
+            File workImg = await _convertBase64ToFile(imageBase64, 'workImg.png');
+            fetchedWorkImages.add(workImg);
+          }
+          setState(() {
+            fetchedWorkImages = fetchedWorkImages;
+          });
+        }
       }
       // Remove phone number prefix
       String fullContact = data['contact'] ?? '';
@@ -303,8 +321,9 @@ class _RegisterDesignerState extends State<RegisterOrEditDesigner> {
                                       ),
                                       child: ClipRRect(
                                         borderRadius: BorderRadius.circular(16),
-                                        child: Icon(Icons.camera_enhance_outlined,color: Colors.grey)
-
+                                        child: (fetchedWorkImages.isEmpty)
+                                            ? Icon(Icons.camera_enhance_outlined,color: Colors.grey)
+                                            : Image.file(fetchedWorkImages[0]!)
                                       ),
                                     ),
                                   ),
@@ -319,7 +338,9 @@ class _RegisterDesignerState extends State<RegisterOrEditDesigner> {
                                       ),
                                       child: ClipRRect(
                                           borderRadius: BorderRadius.circular(16),
-                                          child: Icon(Icons.camera_enhance_outlined,color: Colors.grey)
+                                          child: (fetchedWorkImages.isEmpty)
+                                              ? Icon(Icons.camera_enhance_outlined,color: Colors.grey)
+                                              : Image.file(fetchedWorkImages[1]!)
                                       ),
                                     ),
                                   )
@@ -643,9 +664,15 @@ class _RegisterDesignerState extends State<RegisterOrEditDesigner> {
 
       String? base64Image;
       if (profileImage != null) {
-        final bytes = await profileImage!.readAsBytes();
-        base64Image = base64Encode(bytes);
+        base64Image = await _convertImageToBase64(profileImage);
       }
+
+      List<String?> workImagesBase64 = await Future.wait(fetchedWorkImages.map((image) async {
+        if (image != null) {
+          return await _convertImageToBase64(image);
+        }
+      }));
+
 
       final designerData = {
         'designerId' : designerId,
@@ -658,7 +685,8 @@ class _RegisterDesignerState extends State<RegisterOrEditDesigner> {
         'state' : _stateController.text,
         'slogan' : _sloganController.text,
         'desc' : _descController.text,
-        'profileImg' : base64Image
+        'profileImg' : base64Image,
+        'workImgs' : workImagesBase64
       };
 
       if (existingDesignerQuery.docs.isNotEmpty) {
@@ -679,5 +707,10 @@ class _RegisterDesignerState extends State<RegisterOrEditDesigner> {
         _isLoading = false;
       });
     }
+  }
+
+  Future<String?> _convertImageToBase64(File? imageFile) async {
+    final bytes = await imageFile!.readAsBytes();
+    return base64Encode(bytes);
   }
 }
