@@ -23,10 +23,10 @@ class DesignerCard extends StatelessWidget {
       data['state']?.toString()
     ].where((e) => e != null && e.trim().isNotEmpty).join(', ');
 
-    final List portfolioImgs = data['portfolioImg'] is List
-        ? data['portfolioImg']  // if is Array in firestore, it assign as List
-        : (data['portfolioImg'] is String && data['portfolioImg'].isNotEmpty)
-        ? [data['portfolioImg']] // if is String in firestore, make it as List
+    final List workImgs = data['workImgs'] is List
+        ? data['workImgs']  // if is Array in firestore, it assign as List
+        : (data['workImgs'] is String && data['workImgs'].isNotEmpty)
+        ? [data['workImgs']] // if is String in firestore, make it as List
         : []; // empty List
 
     return Padding(
@@ -84,7 +84,7 @@ class DesignerCard extends StatelessWidget {
                         ),
                         const SizedBox(height: 4,),
                         Text(
-                          'From \$${data['fee']}/ project',
+                          'From \$${data['rate']}/ project',
                           style: TextStyle(fontSize: 12, color: Colors.grey),
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -133,12 +133,12 @@ class DesignerCard extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 12,),
-              if (portfolioImgs.isNotEmpty)
+              if (workImgs.isNotEmpty)
                 SizedBox(
                   height: 100,
                   child: ListView.builder(
                     scrollDirection: Axis.horizontal,
-                    itemCount: portfolioImgs.length,
+                    itemCount: workImgs.length,
                     itemBuilder: (context, index){
                       return Container(
                         width: 100,
@@ -146,7 +146,7 @@ class DesignerCard extends StatelessWidget {
                         decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(8),
                             image: DecorationImage(
-                                image: _safeDecodeImage(portfolioImgs[index]),
+                                image: _safeDecodeImage(workImgs[index]),
                                 fit: BoxFit.cover
                             )
                         ),
@@ -154,8 +154,6 @@ class DesignerCard extends StatelessWidget {
                     },
                   ),
                 )
-              else
-                const Center(child: Text('No portfolio images available')),
             ],
           ),
 

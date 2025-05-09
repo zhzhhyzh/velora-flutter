@@ -1,51 +1,61 @@
 class DesignerModel {
   final String id;
   final String name;
-  final double fee;
+  final double rate;
   final String category;
   final String location;
-  final String profileImg;
-  final List<String> portfolioImg;
+  final String? profileImg;
+  final List<String>? workImgs;
   final String? about;
   final String? slogan;
+  final String contact;
+  final String email;
 
   DesignerModel({
     required this.id,
     required this.name,
-    required this.fee,
+    required this.rate,
     required this.category,
     required this.location,
-    required this.profileImg,
-    required this.portfolioImg,
+    this.profileImg,
+    this.workImgs,
     this.about,
     this.slogan,
+    required this.contact,
+    required this.email
   });
 
   Map<String, dynamic> toMap() {
     return {
-      'id': id,
+      'DesignerId': id,
       'name': name,
-      'fee': fee,
+      'rate': rate,
       'category': category,
       'location': location,
       'profileImg': profileImg,
-      'portfolioImg': List<String>.from(portfolioImg),
+      'workImgs': workImgs ?? [],
       'about': about,
       'slogan': slogan,
+      'contact' : contact,
+      'email' : email
     };
   }
 
   factory DesignerModel.fromMap(Map<String, dynamic> data) {
     return DesignerModel(
-      id: data['id'],
+      id: data['DesignerId'],
       name: data['name'],
-      fee: data['fee'],
+      rate: data['rate'],
       category: data['category'],
       location: data['location'],
       profileImg: data['profileImg'],
-      portfolioImg: List<String>.from(data['portfolioImg']),
+        workImgs: data['portfolioImg'] != null
+            ? List<String>.from(data['portfolioImg'])
+            : [],
       about: data['about'] ?? 'No information provided.',
       slogan: data['slogan'] ?? '',
+      contact: data['contact'],
+      email: data['email']
     );
   }
 }
