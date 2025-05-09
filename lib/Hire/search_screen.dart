@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:velora2/Hire/register_designer.dart';
+import 'package:velora2/Hire/edit_desinger_form.dart';
 import '../Services/global_dropdown.dart';
 import 'tab_filtered_designer.dart';
 
@@ -47,7 +47,7 @@ class _AllHiresScreenState extends State<AllHiresScreen> {
                     ElevatedButton(
                       onPressed: () => Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (_) => RegisterDesigner())
+                          MaterialPageRoute(builder: (_) => RegisterOrEditDesigner())
                       ),
                       style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF689f77),
