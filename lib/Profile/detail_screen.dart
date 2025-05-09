@@ -87,6 +87,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           userImage: data['userImage'], // base64
         );
 
+
         // Update UI
         setState(() {
           _usernameCtrl.text = userModel.name;
@@ -178,6 +179,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
       final user = _auth.currentUser;
       if (user == null) return;
 
+      final oldEmail = user.email;
+      await user.verifyBeforeUpdateEmail(_emailCtrl.text.trim());
+
       String? base64Image;
       if (imageFile != null) {
         final bytes = await imageFile!.readAsBytes();
@@ -191,6 +195,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
         'position': _positionCtrl.text.trim(),
         if (base64Image != null) 'userImage': base64Image,
       });
+
+
+      final designersRef = _firestore.collection('designers');
+      final existingDesignerQuery = await designersRef
+          .where('email', isEqualTo: oldEmail)
+          .limit(1)
+          .get();
+
+      if (existingDesignerQuery.docs.isNotEmpty) {
+        final String designerId = existingDesignerQuery.docs.first.id;
+        final DocumentReference designerDocRef = designersRef.doc(designerId);
+        await designerDocRef.update({'email' : _emailCtrl.text.trim()});
+      }
+      else {ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('ERRRRRRRRRRR')),
+      );}
+
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Profile updated successfully!')),
