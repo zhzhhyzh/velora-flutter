@@ -108,7 +108,7 @@ class _OfferDesignerScreenState extends State<OfferDesignerScreen> {
                                       TextSpan(
                                           text: (data['contact'] ?? '').toString().trim().isNotEmpty
                                               ? data['contact']
-                                              : null,
+                                              : '-',
                                           style: TextStyle(fontWeight: FontWeight.normal, color: Colors.black)
                                       )
                                     ]
@@ -142,6 +142,7 @@ class _OfferDesignerScreenState extends State<OfferDesignerScreen> {
             ),
             const Divider(height: 30, thickness: 1),
             Form(
+              key: _formKey,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -287,7 +288,7 @@ class _OfferDesignerScreenState extends State<OfferDesignerScreen> {
  The job details are as follows:
  </p>
  
- <p>${_descCtrl}</p>
+ <p>${_descCtrl.text}</p>
  <p>  <strong>Start Date:</strong> ${_startDateCtrl} <br>
       <strong>End Date:</strong> ${_endDateCtrl} <br>
       <strong>Offer Rate:</strong> ${_rateCtrl} <br>
