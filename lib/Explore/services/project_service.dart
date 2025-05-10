@@ -33,7 +33,6 @@ class ProjectService {
     // Apply search query
     if (searchQuery != null && searchQuery.isNotEmpty) {
       final searchLower = searchQuery.toLowerCase();
-      // Just limit, don't order here
       query = query.limit(50);
     }
 
@@ -63,7 +62,7 @@ class ProjectService {
       }
     }
 
-    // Apply sorting (only one orderBy per field)
+    // Apply sorting
     switch (sortBy) {
       case 'Most Popular':
         query = query.orderBy('views', descending: true);
@@ -76,24 +75,47 @@ class ProjectService {
         query = query.orderBy('createdAt', descending: true);
     }
 
-    return query.snapshots().map((snapshot) {
+    return query.snapshots().asyncMap((snapshot) async {
       try {
-        final projects = snapshot.docs.map((doc) => Project.fromFirestore(doc)).toList();
+        final currentUserId = _auth.currentUser?.uid;
+        final projects = await Future.wait(
+          snapshot.docs.map((doc) async {
+            final project = Project.fromFirestore(doc);
+            
+            // Get user details
+            final userDoc = await _firestore.collection('users').doc(project.designerId).get();
+            final userData = userDoc.data() ?? {};
+            
+            // Check if current user has liked the project
+            bool isLiked = false;
+            if (currentUserId != null) {
+              final likeDoc = await _firestore
+                  .collection('userLikes')
+                  .doc('${currentUserId}_${project.id}')
+                  .get();
+              isLiked = likeDoc.exists;
+            }
+            
+            // Add user details and like status to project
+            return project.copyWith(
+              designerName: userData['name'] ?? 'Unknown User',
+              designerImage: userData['userImage'],
+              isLiked: isLiked,
+            );
+          }),
+        );
         
-        // If there's a search query, filter results to include exact matches and tag matches
+        // Apply search filtering if needed
         if (searchQuery != null && searchQuery.isNotEmpty) {
           final searchLower = searchQuery.toLowerCase();
           return projects.where((project) {
             try {
-              // Check for exact title match
               if (project.title.toLowerCase() == searchLower) {
                 return true;
               }
-              // Check for partial matches in title (any part of the title)
               if (project.title.toLowerCase().contains(searchLower)) {
                 return true;
               }
-              // Check for tag matches
               return project.tags.any((tag) => tag.toLowerCase().contains(searchLower));
             } catch (e) {
               print('Error filtering project: $e');
