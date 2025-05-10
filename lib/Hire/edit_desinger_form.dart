@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:intl/intl.dart' as intl;
 import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
 
@@ -147,6 +148,7 @@ class _RegisterDesignerState extends State<RegisterOrEditDesigner> {
 
   @override
   Widget build(BuildContext context) {
+
     return Scaffold(
         backgroundColor: Colors.white,
         appBar: TheAppBar(content: "Be a Designer", style: 2),
@@ -192,15 +194,15 @@ class _RegisterDesignerState extends State<RegisterOrEditDesigner> {
                           _textTitle(label: 'Contact No.:'),
                           _textFormField(
                               controller: _contactController,
-                              keyboardType: TextInputType.number,
-                              hintText: 'Enter Phone No.',
+                              keyboardType: TextInputType.phone,
+                              hintText: ' Enter Phone No.',
                               maxLength: 15,
                               hideCounter: true
                           ),
                           _textTitle(label: 'Email:'),
                           _textFormField(
                               controller: _emailController,
-                              keyboardType: TextInputType.text,
+                              keyboardType: TextInputType.emailAddress,
                               hintText: 'Enter Email',
                               maxLength: 30,
                               hideCounter: true,
@@ -227,7 +229,7 @@ class _RegisterDesignerState extends State<RegisterOrEditDesigner> {
                           _textFormField(
                               controller: _minRateController,
                               keyboardType: TextInputType.number,
-                              hintText: 'Enter Minimum Rate',
+                              hintText: ' Enter Minimum Rate',
                               maxLength: 10,
                               hideCounter: true
                           ),
@@ -582,9 +584,18 @@ class _RegisterDesignerState extends State<RegisterOrEditDesigner> {
       if (_countryController.text == 'India') return '+91 ';
     }
     if (controller == _minRateController) {
-      if (_countryController.text == 'Malaysia') return 'MYR ';
-      if (_countryController.text == 'United States') return 'USD ';
-      if (_countryController.text == 'India') return 'INR ';
+      if (_countryController.text == 'Malaysia') {
+        final currency = intl.NumberFormat('#,##0.00', 'ms_MY');
+        return currency.currencySymbol;
+      };
+      if (_countryController.text == 'United States') {
+        final currency = intl.NumberFormat('#,##0.00', 'en_US');
+        return currency.currencySymbol;
+      };;
+      if (_countryController.text == 'India') {
+        final currency = intl.NumberFormat('#,##0.00', 'en_IN');
+        return currency.currencySymbol;
+      };;
     }
     return null;
   }
