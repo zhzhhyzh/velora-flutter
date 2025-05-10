@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
   import 'package:flutter/cupertino.dart';
   import 'package:flutter/material.dart';
 import 'package:velora2/Hire/edit_desinger_form.dart';
+import 'package:velora2/Hire/offer_designer.dart';
   import 'package:velora2/Widgets/the_app_bar.dart';
   import 'Widgets/designer_card.dart';
 
@@ -252,11 +253,12 @@ import 'package:velora2/Hire/edit_desinger_form.dart';
                       )
                   )
                       :MaterialButton(
-                      onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Hire request initiated'))
-                        );
-                      },
+                      onPressed: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => OfferDesignerScreen(designer: widget.designer),
+                        ),
+                      ),
                       color: const Color(0xff689f77),
                       elevation: 8,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
