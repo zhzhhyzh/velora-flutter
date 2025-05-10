@@ -411,7 +411,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         child: Text(position, style: const TextStyle(color: Colors.white)),
                       );
                     }).toList(),
-                    dropdownColor: Colors.white,
+                    dropdownColor: Colors.black54,
                     iconEnabledColor: Colors.black,
                     style: const TextStyle(color: Colors.black),
                     onChanged: (String? value) {

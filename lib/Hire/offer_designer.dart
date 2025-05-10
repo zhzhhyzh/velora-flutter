@@ -277,7 +277,7 @@ class _OfferDesignerScreenState extends State<OfferDesignerScreen> {
         await emailSender.sendEmail(
           toEmail: designerEmail,
           toName: 'Designer',
-          // subject: 'New Offer from ${user.name}',
+          subject: 'Email To Dear Designer',
           htmlContent: '''
 <p>Dear ${designerData['name']},</p>
 <p>I hope this message finds you well.</p>
