@@ -70,7 +70,13 @@ class _CreateContestPageState extends State<CreateContestPage> {
 
     try {
       final user = FirebaseAuth.instance.currentUser;
-      if (user == null) throw 'User not logged in';
+      if (user == null || user.email == null) { // Check for null email as well
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('User not logged in or email not available.')),
+        );
+        setState(() => _isUploading = false);
+        return;
+      }
 
       final id = FirebaseFirestore.instance.collection('contests').doc().id;
 
@@ -82,19 +88,25 @@ class _CreateContestPageState extends State<CreateContestPage> {
         startDate: _startDate!,
         endDate: _endDate!,
         coverImagePath: _base64CoverImage!,
-        createdBy: user.email!,
+        createdBy: user.email!, // Email of the user creating the contest
         createdAt: DateTime.now(),
         isActive: true,
       );
 
-      await LocalDatabase.insertContest(contest);
       await FirebaseFirestore.instance.collection('contests').doc(id).set({
-        ...contest.toMap(),
+        'id': contest.id,
+        'title': contest.title,
+        'description': contest.description,
+        'category': contest.category,
         'startDate': contest.startDate.millisecondsSinceEpoch,
         'endDate': contest.endDate.millisecondsSinceEpoch,
+        'coverImagePath': contest.coverImagePath,
+        'createdBy': contest.createdBy, // Contest creator's email
         'createdAt': contest.createdAt.millisecondsSinceEpoch,
-        'winnerEmail': '',
+        'isActive': contest.isActive,
+        'winnerEmail': null, // Initialize winnerEmail as null or empty string
         'winnerNotified': false,
+        'participants': [],
       });
 
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Contest created successfully!')));
