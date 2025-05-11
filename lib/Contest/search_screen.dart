@@ -259,8 +259,8 @@ class _AllContestsScreenState extends State<AllContestsScreen> {
         content: DropdownButtonFormField<String>(
           decoration: InputDecoration(
             filled: true,
-            fillColor: Colors.grey.shade200,
-            hintStyle: TextStyle(color: Colors.grey.shade700, fontSize: 16),
+            fillColor: Colors.grey.shade700,
+            hintStyle: TextStyle(color: Colors.white, fontSize: 16),
             border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12.0),
                 borderSide: BorderSide.none),
@@ -276,9 +276,9 @@ class _AllContestsScreenState extends State<AllContestsScreen> {
             contentPadding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 15.0),
           ),
           value: _selectedCategory,
-          hint: const Text('Select Design Category'),
+          hint: const Text('Select Design Category', style: const TextStyle(color: Colors.white70, fontSize: 16)),
           dropdownColor: Colors.black,
-          iconEnabledColor: Colors.grey.shade700,
+          iconEnabledColor: Colors.grey.shade200,
           style: const TextStyle(color: Colors.black, fontSize: 16),
           isExpanded: true,
           items: GlobalDD.designCategories.map((String category) {
