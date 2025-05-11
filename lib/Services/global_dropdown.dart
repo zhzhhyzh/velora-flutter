@@ -25,6 +25,12 @@ class GlobalDD{
   ];
  static final List<String> countries = ['Malaysia', 'United States', 'India'];
 
+  static final List<String> categories = const [
+    'Web Design', 'Mobile Design', 'Fashion Design', 'Packaging Design',
+    'Advertising Design', 'Graphic Design', 'Interior Design', 'Architecture Design',
+    'Logo Design', 'Animation Design'
+  ];
+
  static final Map<String, List<String>> states = {
     'Malaysia': ['Selangor', 'Penang', 'Johor', 'Sarawak'],
     'United States': ['California', 'Texas', 'New York', 'Florida'],
