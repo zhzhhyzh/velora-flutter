@@ -1,61 +1,63 @@
 class DesignerModel {
   final String id;
   final String name;
-  final double rate;
   final String category;
-  final String location;
-  final String? profileImg;
-  final List<String>? workImgs;
-  final String? about;
-  final String? slogan;
   final String contact;
+  final String country;
+  final String desc;
+  final String designerId;
   final String email;
+  final String profileImg;
+  final String rate;
+  final String slogan;
+  final String state;
 
   DesignerModel({
     required this.id,
     required this.name,
-    required this.rate,
     required this.category,
-    required this.location,
-    this.profileImg,
-    this.workImgs,
-    this.about,
-    this.slogan,
     required this.contact,
-    required this.email
+    required this.country,
+    required this.desc,
+    required this.designerId,
+    required this.email,
+    required this.profileImg,
+    required this.rate,
+    required this.slogan,
+    required this.state,
   });
 
   Map<String, dynamic> toMap() {
     return {
-      'DesignerId': id,
+      'id': id,
       'name': name,
-      'rate': rate,
       'category': category,
-      'location': location,
+      'contact': contact,
+      'country': country,
+      'desc': desc,
+      'designerId': designerId,
+      'email': email,
       'profileImg': profileImg,
-      'workImgs': workImgs ?? [],
-      'about': about,
+      'rate': rate,
       'slogan': slogan,
-      'contact' : contact,
-      'email' : email
+      'state': state,
     };
   }
 
-  factory DesignerModel.fromMap(Map<String, dynamic> data) {
+  factory DesignerModel.fromMap(Map<String, dynamic> map) {
     return DesignerModel(
-      id: data['DesignerId'],
-      name: data['name'],
-      rate: data['rate'],
-      category: data['category'],
-      location: data['location'],
-      profileImg: data['profileImg'],
-        workImgs: data['portfolioImg'] != null
-            ? List<String>.from(data['portfolioImg'])
-            : [],
-      about: data['about'] ?? 'No information provided.',
-      slogan: data['slogan'] ?? '',
-      contact: data['contact'],
-      email: data['email']
+      id: map['id'],
+      name: map['name'],
+      category: map['category'],
+      contact: map['contact'],
+      country: map['country'],
+      desc: map['desc'],
+      designerId: map['designerId'],
+      email: map['email'],
+      profileImg: map['profileImg'],
+      rate: map['rate'],
+      slogan: map['slogan'],
+      state: map['state'],
     );
   }
 }
