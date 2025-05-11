@@ -52,6 +52,7 @@ class _RegisterDesignerState extends State<RegisterOrEditDesigner> {
   final _formKey = GlobalKey<FormState>();
   bool _isLoading = false;
   final currentUser = FirebaseAuth.instance.currentUser;
+  String title = 'Be a Designer';
 
   final TextEditingController _designerNameController = TextEditingController();
   final TextEditingController _minRateController = TextEditingController();
@@ -96,6 +97,7 @@ class _RegisterDesignerState extends State<RegisterOrEditDesigner> {
 
   Future<void> _loadDesignerData()  async {
     if (widget.designerData != null) {
+      title = 'Edit Designer';
       final data = widget.designerData!.data() as Map<String, dynamic>;
       _designerNameController.text = data['name'] ?? '';
       _minRateController.text = data['rate'] ?? '';
@@ -151,7 +153,7 @@ class _RegisterDesignerState extends State<RegisterOrEditDesigner> {
 
     return Scaffold(
         backgroundColor: Colors.white,
-        appBar: TheAppBar(content: "Be a Designer", style: 2),
+        appBar: TheAppBar(content: title, style: 2),
         body:
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,

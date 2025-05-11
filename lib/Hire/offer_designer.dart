@@ -20,6 +20,7 @@ class OfferDesignerScreen extends StatefulWidget {
 }
 
 class _OfferDesignerScreenState extends State<OfferDesignerScreen> {
+  final user = FirebaseAuth.instance.currentUser;
   final _formKey = GlobalKey<FormState>();
   bool _isSubmitting = false;
 
@@ -27,6 +28,9 @@ class _OfferDesignerScreenState extends State<OfferDesignerScreen> {
   final TextEditingController _startDateCtrl = TextEditingController();
   final TextEditingController _endDateCtrl = TextEditingController();
   final TextEditingController _rateCtrl = TextEditingController();
+  final TextEditingController _rNameCtrl = TextEditingController();
+  final TextEditingController _rPhoneCtrl = TextEditingController();
+  final TextEditingController _rEmailCtrl = TextEditingController();
   DateTime? sDate;
   Timestamp? sDateTimestamp;
   DateTime? eDate;
@@ -35,6 +39,31 @@ class _OfferDesignerScreenState extends State<OfferDesignerScreen> {
   @override
   void initState() {
     super.initState();
+    _rEmailCtrl.text = user?.email ?? '';
+
+    if (user?.email != null) {
+      _loadUserDetailsByEmail(user!.email!);
+    }
+  }
+
+  Future<void> _loadUserDetailsByEmail(String email) async {
+    try {
+      final userQuery = await FirebaseFirestore.instance
+          .collection('users')
+          .where('email', isEqualTo: email)
+          .limit(1)
+          .get();
+
+      if (userQuery.docs.isNotEmpty) {
+        final userData = userQuery.docs.first.data();
+        setState(() {
+          _rNameCtrl.text = userData['name'] ?? '';
+          _rPhoneCtrl.text = userData['phoneNumber'] ?? '';
+        });
+      }
+    } catch (e) {
+      debugPrint('Failed to fetch user data: $e');
+    }
   }
 
   @override
@@ -181,8 +210,42 @@ class _OfferDesignerScreenState extends State<OfferDesignerScreen> {
                         prefix: Text(_currencyFormatter.currencySymbol),
                         keyboardType: TextInputType.number
                     ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 10.0),
+                      child: Divider(thickness: 1),
+                    ),
+                    Text(
+                      'Recruiter Contact',
+                      style: TextStyle(fontSize: 25,fontWeight: FontWeight.bold),
+                    ),
+                    _textTitle(label: 'Name:'),
+                    _textFormField(
+                        controller: _rNameCtrl,
+                        hintText: ' Recruiter Name',
+                        maxLength: 50,
+                        hideCounter: true,
+                        keyboardType: TextInputType.text
+                    ),
+
+                    _textTitle(label: 'Phone No.:'),
+                    _textFormField(
+                        controller: _rPhoneCtrl,
+                        hintText: ' Recruiter Phone No.',
+                        maxLength: 10,
+                        hideCounter: true,
+                        keyboardType: TextInputType.number
+                    ),
+
+                    _textTitle(label: 'Email:'),
+                    _textFormField(
+                        controller: _rEmailCtrl,
+                        hintText: ' Recruiter Email',
+                        maxLength: 50,
+                        hideCounter: true,
+                        keyboardType: TextInputType.text
+                    ),
                   ],
-                )
+                ),
             ),
             const SizedBox(height: 30),
             ElevatedButton(
@@ -254,14 +317,16 @@ class _OfferDesignerScreenState extends State<OfferDesignerScreen> {
     setState(() => _isSubmitting = true);
 
     try {
-      final user = FirebaseAuth.instance.currentUser;
       final designerData = widget.designer.data() as Map<String, dynamic>;
+      final offersRef = FirebaseFirestore.instance.collection('offers');
+      final offerDoc = offersRef.doc(); // Auto-ID
+      final offerId = offerDoc.id;
 
-      await FirebaseFirestore.instance.collection('offers').add({
-        // 'offerId' : ,
-        'recruiterEmail': user!.email,
-        // 'recruiterName': user!.name,
-        'recruiterPhone': user!.phoneNumber,
+      await offerDoc.set({
+        'offerId' : offerId,
+        'recruiterEmail': _rEmailCtrl.text,
+        'recruiterName': _rNameCtrl.text ,
+        'recruiterPhone': _rPhoneCtrl.text,
         'projectStartTime' :_startDateCtrl.text,
         'projectEndTime' : _endDateCtrl.text,
         'projectDesc' : _descCtrl.text,
@@ -278,30 +343,31 @@ class _OfferDesignerScreenState extends State<OfferDesignerScreen> {
         await emailSender.sendEmail(
           toEmail: designerEmail,
           toName: 'Designer',
-          subject: 'Email To Dear Designer',
-          htmlContent: '''
-<p>Dear ${designerData['name']},</p>
-<p>I hope this message finds you well.</p>
-<p>e were impressed with your design portfolio and
- would like to offer you an exciting opportunity to 
- collaborate with us on a new project.<br>
- The job details are as follows:
- </p>
- 
- <p>${_descCtrl.text}</p>
- <p>  <strong>Start Date:</strong> ${_startDateCtrl} <br>
-      <strong>End Date:</strong> ${_endDateCtrl} <br>
-      <strong>Offer Rate:</strong> ${_rateCtrl} <br>
-      
-      <strong>Contact Phone No.:</strong> ${user!.phoneNumber} <br>
-      <strong>Contact Email:</strong> ${user!.email} <br>   
- </p>
- 
- <p>If you’re interested, please let us know by replying to 
- this email or contacting us directly. We look forward to the 
- possibility of working together.
- </p>
-''',
+          subject: 'New Offer To Dear Designer',
+          htmlContent:
+          '''
+            <p>Dear ${designerData['name']},</p>
+            <p>I hope this message finds you well.</p>
+            <p>e were impressed with your design portfolio and
+             would like to offer you an exciting opportunity to 
+             collaborate with us on a new project.<br>
+             The job details are as follows:
+             </p>
+             
+             <p>${_descCtrl.text}</p>
+             <p>  <strong>Start Date:</strong> ${_startDateCtrl.text} <br>
+                  <strong>End Date:</strong> ${_endDateCtrl.text} <br>
+                  <strong>Offer Rate:</strong> ${_rateCtrl.text} <br>
+                  <strong>Contact Person:</strong> ${_rNameCtrl.text } <br>
+                  <strong>Contact Phone No.:</strong> ${_rPhoneCtrl.text} <br>
+                  <strong>Contact Email:</strong> ${_rEmailCtrl.text} <br>   
+             </p>
+             
+             <p>If you’re interested, please let us know by replying to 
+             this email or contacting us directly. We look forward to the 
+             possibility of working together.
+             </p>
+            ''',
         );
       } catch (e) {
         ScaffoldMessenger.of(
@@ -392,8 +458,6 @@ class _OfferDesignerScreenState extends State<OfferDesignerScreen> {
     required bool enabled,
     required Function fct,
     required String hint,
-    List<TextInputFormatter>? inputFormatters,
-    TextInputType? keyboardType,
   }) {
     return Padding(
       padding: EdgeInsets.all(5.0),
