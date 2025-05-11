@@ -595,4 +595,51 @@ class ProjectService {
     final doc = await _firestore.collection('users').doc(userId).get();
     return doc.data()?['followers'] ?? 0;
   }
+
+  // Delete a project
+  Future<void> deleteProject(String projectId) async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) throw 'User not logged in';
+
+      // Get the project document
+      final projectRef = _firestore.collection(_projectsCollection).doc(projectId);
+      final projectDoc = await projectRef.get();
+
+      if (!projectDoc.exists) {
+        throw 'Project not found';
+      }
+
+      // Verify that the current user is the project owner
+      final projectData = projectDoc.data();
+      if (projectData == null || projectData['designerId'] != user.uid) {
+        throw 'You do not have permission to delete this project';
+      }
+
+      // Delete all comments associated with the project
+      final commentsQuery = await _firestore
+          .collection('comments')
+          .where('projectId', isEqualTo: projectId)
+          .get();
+      
+      for (var doc in commentsQuery.docs) {
+        await doc.reference.delete();
+      }
+
+      // Delete all likes associated with the project
+      final likesQuery = await _firestore
+          .collection('userLikes')
+          .where('projectId', isEqualTo: projectId)
+          .get();
+      
+      for (var doc in likesQuery.docs) {
+        await doc.reference.delete();
+      }
+
+      // Delete the project
+      await projectRef.delete();
+    } catch (e) {
+      throw 'Failed to delete project: $e';
+    }
+  }
 } 

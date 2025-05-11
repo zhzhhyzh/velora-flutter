@@ -251,12 +251,11 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
 
   Widget _buildAppBar() {
     return SliverAppBar(
-      pinned: true,
-        backgroundColor: Colors.white,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () => Navigator.pop(context),
-        ),
+      backgroundColor: Colors.white,
+      leading: IconButton(
+        icon: const Icon(Icons.arrow_back, color: Colors.black),
+        onPressed: () => Navigator.pop(context),
+      ),
       title: Text(
         _currentProject!.title,
         style: const TextStyle(
@@ -264,55 +263,104 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
           fontSize: 18,
           fontWeight: FontWeight.bold,
         ),
-        ),
-        actions: [
-          if (_auth.currentUser?.uid == _currentProject!.designerId)
-            IconButton(
-              icon: const Icon(Icons.edit, color: Colors.black),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => EditProjectScreen(project: _currentProject!),
-                  ),
-                ).then((_) => _refreshProjectData());
-              },
-            ),
+      ),
+      actions: [
+        if (_auth.currentUser?.uid == _currentProject!.designerId) ...[
           IconButton(
-          icon: const Icon(Icons.share, color: Colors.black),
+            icon: const Icon(Icons.edit, color: Colors.black),
             onPressed: () async {
-              try {
-                // Create a temporary file for the image
-                final tempDir = await getTemporaryDirectory();
-                final file = File('${tempDir.path}/project_image.jpg');
-                await file.writeAsBytes(base64Decode(_currentProject!.imageUrl));
-                
-                await Share.shareXFiles(
-                  [XFile(file.path)],
-                  text: 'Check out this amazing project in our app!\n\n'
-                      'Title : ${_currentProject!.title}\n'
-                      'Description : ${_currentProject!.description}\n\n'
-                      'By :  ${_currentProject!.designerName}\n'
-                      'Category: ${_currentProject!.category}\n\n'
-                      'Download our app to view more creative projects and connect with talented designers!',
-                );
-
-                // Clean up the temporary file after sharing
-                await file.delete();
-              } catch (e) {
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Error sharing: $e'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                }
+              final result = await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => EditProjectScreen(project: _currentProject!),
+                ),
+              );
+              if (result == true) {
+                _refreshProjectData();
               }
             },
           ),
+          IconButton(
+            icon: const Icon(Icons.delete, color: Colors.black),
+            onPressed: () => _showDeleteConfirmation(),
+          ),
         ],
+        IconButton(
+          icon: const Icon(Icons.share, color: Colors.black),
+          onPressed: () async {
+            try {
+              final directory = await getTemporaryDirectory();
+              final file = File('${directory.path}/project_image.jpg');
+              await file.writeAsBytes(base64Decode(_currentProject!.imageUrl));
+              
+              await Share.shareXFiles(
+                [XFile(file.path)],
+                text: 'Check out this amazing project in our app!\n\n'
+                    'Title : ${_currentProject!.title}\n'
+                    'Description : ${_currentProject!.description}\n\n'
+                    'By :  ${_currentProject!.designerName}\n'
+                    'Category: ${_currentProject!.category}\n\n'
+                    'Download our app to view more creative projects and connect with talented designers!',
+              );
+
+              // Clean up the temporary file after sharing
+              await file.delete();
+            } catch (e) {
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Error sharing: $e'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
+            }
+          },
+        ),
+      ],
     );
+  }
+
+  Future<void> _showDeleteConfirmation() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Project'),
+        content: const Text('Are you sure you want to delete this project? This action cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        await _projectService.deleteProject(_currentProject!.id);
+        if (mounted) {
+          Navigator.pop(context); // Return to previous screen
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Project deleted successfully')),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error deleting project: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    }
   }
 
   Widget _buildProjectInfo() {
