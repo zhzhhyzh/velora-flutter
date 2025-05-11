@@ -32,6 +32,23 @@ class _UploadDesignPageState extends State<UploadDesignPage> {
     }
   }
 
+  Future<void> addUserToContestParticipants(String contestId, String userEmail) async {
+    if (userEmail.isEmpty || contestId.isEmpty) {
+      print('User email or Contest ID is empty, cannot add participant.');
+      return;
+    }
+    try {
+      final contestRef = FirebaseFirestore.instance.collection('contests').doc(contestId);
+      await contestRef.update({
+        'participants': FieldValue.arrayUnion([userEmail])
+      });
+      print('User $userEmail successfully added/ensured in participants list for contest $contestId');
+    } catch (e) {
+      print('Error adding user $userEmail to participants for contest $contestId: $e');
+      // Consider how to handle this error more robustly if needed
+    }
+  }
+
   Future<void> _uploadDesign() async {
     if (!_formKey.currentState!.validate() || _imageFiles.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -44,7 +61,14 @@ class _UploadDesignPageState extends State<UploadDesignPage> {
 
     try {
       final user = FirebaseAuth.instance.currentUser;
-      if (user == null) throw 'User not logged in';
+      if (user == null || user.email == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('User not logged in or email not available.')),
+        );
+        setState(() => _isUploading = false); // Reset loading state
+        return; // Return early
+      }
+      final String currentUserEmail = user.email!; // Store the email
 
       final docRef = FirebaseFirestore.instance
           .collection('contests')
@@ -58,24 +82,35 @@ class _UploadDesignPageState extends State<UploadDesignPage> {
         imageBase64.add(base64Encode(bytes));
       }
 
-      await docRef.set({
+      // Prepare entry data
+      Map<String, dynamic> entryData = {
         'title': _titleController.text.trim(),
         'concept': _conceptController.text.trim(),
-        'createdBy': user.email,
+        'createdBy': currentUserEmail, // Use the stored email
         'createdAt': Timestamp.now(),
         'votes': [],
         'images': imageBase64,
-        'coverImage': imageBase64.first,
+        'coverImage': imageBase64.isNotEmpty ? imageBase64.first : null,
         'id': docRef.id,
         'contestId': widget.contestId,
-      });
+      };
+
+      await docRef.set(entryData);
+      print('Design uploaded successfully by $currentUserEmail for contest ${widget.contestId}');
+      await addUserToContestParticipants(widget.contestId, currentUserEmail);
+
 
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Design uploaded successfully!')));
-      Navigator.pop(context);
+      if (mounted) { // Check if the widget is still in the tree
+        Navigator.pop(context);
+      }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Upload failed: $e')));
+      print('Upload failed: $e'); // Print full error to console for debugging
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Upload failed: ${e.toString()}')));
     } finally {
-      setState(() => _isUploading = false);
+      if (mounted) { // Check if the widget is still in the tree
+        setState(() => _isUploading = false);
+      }
     }
   }
 
