@@ -32,7 +32,7 @@ class GlobalDD{
   ];
 
  static final Map<String, List<String>> states = {
-    'Malaysia': ['Selangor', 'Penang', 'Johor', 'Sarawak'],
+    'Malaysia': ['Selangor', 'Penang', 'Johor', 'Sarawak', 'Greater Kuala Lumpur','Putrajaya','Perak','Negeri Sembilan','Pahang','Kedah','Perlis','Kelantan','Terengganu','Sabah','Labuan','Melaka'],
     'United States': ['California', 'Texas', 'New York', 'Florida'],
     'India': ['Maharashtra', 'Karnataka', 'Delhi', 'Tamil Nadu'],
   };
