@@ -255,11 +255,14 @@ class _OfferDesignerScreenState extends State<OfferDesignerScreen> {
     try {
       final user = FirebaseAuth.instance.currentUser;
       final designerData = widget.designer.data() as Map<String, dynamic>;
+      final offersRef = FirebaseFirestore.instance.collection('offers');
+      final offerDoc = offersRef.doc(); // Auto-ID
+      final offerId = offerDoc.id;
 
-      await FirebaseFirestore.instance.collection('offers').add({
-        // 'offerId' : ,
+      await offerDoc.set({
+        'offerId' : offerId,
         'recruiterEmail': user!.email,
-        // 'recruiterName': user!.name,
+        'recruiterName': user!.displayName ?? 'A recruiter',
         'recruiterPhone': user!.phoneNumber,
         'projectStartTime' :_startDateCtrl.text,
         'projectEndTime' : _endDateCtrl.text,
@@ -277,30 +280,32 @@ class _OfferDesignerScreenState extends State<OfferDesignerScreen> {
         await emailSender.sendEmail(
           toEmail: designerEmail,
           toName: 'Designer',
-          // subject: 'New Offer from ${user.name}',
-          htmlContent: '''
-<p>Dear ${designerData['name']},</p>
-<p>I hope this message finds you well.</p>
-<p>e were impressed with your design portfolio and
- would like to offer you an exciting opportunity to 
- collaborate with us on a new project.<br>
- The job details are as follows:
- </p>
- 
- <p>${_descCtrl}</p>
- <p>  <strong>Start Date:</strong> ${_startDateCtrl} <br>
-      <strong>End Date:</strong> ${_endDateCtrl} <br>
-      <strong>Offer Rate:</strong> ${_rateCtrl} <br>
-      
-      <strong>Contact Phone No.:</strong> ${user!.phoneNumber} <br>
-      <strong>Contact Email:</strong> ${user!.email} <br>   
- </p>
- 
- <p>If you’re interested, please let us know by replying to 
- this email or contacting us directly. We look forward to the 
- possibility of working together.
- </p>
-''',
+          subject: 'New Offer from ${user!.displayName ?? 'a recruiter'}',
+          htmlContent:
+          '''
+            <p>Dear ${designerData['name']},</p>
+            <p>
+            I hope this message finds you well.</p>
+            <p>e were impressed with your design portfolio and
+             would like to offer you an exciting opportunity to 
+             collaborate with us on a new project.<br>
+             The job details are as follows:
+             </p>
+             
+             <p>${_descCtrl}</p>
+             <p>  <strong>Start Date:</strong> ${_startDateCtrl.text} <br>
+                  <strong>End Date:</strong> ${_endDateCtrl.text} <br>
+                  <strong>Offer Rate:</strong> ${_rateCtrl.text} <br>
+                  <strong>Contact Person:</strong> ${user!.displayName ?? ''} <br>
+                  <strong>Contact Phone No.:</strong> ${user!.phoneNumber} <br>
+                  <strong>Contact Email:</strong> ${user!.email} <br>   
+             </p>
+             
+             <p>If you’re interested, please let us know by replying to 
+             this email or contacting us directly. We look forward to the 
+             possibility of working together.
+             </p>
+          ''',
         );
       } catch (e) {
         ScaffoldMessenger.of(
