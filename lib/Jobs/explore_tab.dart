@@ -76,7 +76,7 @@ class _ExploreTabState extends State<ExploreTab> {
           'data': doc.data(),
         };
       }).toList();
-
+await _saveCloudJobsLocally(jobs);
       if (mounted) {
         setState(() {
           _jobs = jobs;
@@ -89,6 +89,35 @@ class _ExploreTabState extends State<ExploreTab> {
     }
   }
 
+  Future<void> _saveCloudJobsLocally(List<Map<String, dynamic>> cloudJobs) async {
+    try {
+      final localJobs = cloudJobs.map((jobMap) {
+        final data = jobMap['data'] as Map<String, dynamic>;
+
+        // Generate unique ID if not present
+        final id = jobMap['doc']?.id ?? 'job_${DateTime.now().millisecondsSinceEpoch}';
+
+        return JobModel(
+          id: id,
+          jobTitle: data['jobTitle'] ?? '',
+          comName: data['comName'] ?? '',
+          jobLocation: data['jobLocation'] ?? '',
+          jobCat: data['jobCat'] ?? '',
+          jobImage: data['jobImage'] ?? '',
+          deadline: data['deadline'] != null
+              ? DateTime.tryParse(data['deadline'])
+              : null,
+        );
+      }).toList();
+
+      // Save jobs to the local database
+      for (var job in localJobs) {
+        await LocalDatabase.insertJob(job);
+      }
+    } catch (e) {
+      debugPrint('Error saving cloud jobs locally: $e');
+    }
+  }
   @override
   Widget build(BuildContext context) {
     final filteredJobs = _jobs.where((jobMap) {
