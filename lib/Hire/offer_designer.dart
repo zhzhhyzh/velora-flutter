@@ -90,11 +90,11 @@ class _OfferDesignerScreenState extends State<OfferDesignerScreen> {
     return Scaffold(
       appBar: TheAppBar(content: 'Offer ${data['name']}', style: 2,),
       backgroundColor: Colors.white,
-      body: SingleChildScrollView(
-        padding: EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Row(
+      body: Column(
+        children: [
+          Padding(
+            padding: EdgeInsets.all(16),
+            child: Row(
                 children: [
                   CircleAvatar(
                     backgroundImage: MemoryImage(base64Decode(data['profileImg'])),
@@ -169,137 +169,147 @@ class _OfferDesignerScreenState extends State<OfferDesignerScreen> {
                   ),
                 ]
             ),
-            const Divider(height: 30, thickness: 1),
-            Form(
-              key: _formKey,
+          ),
+          const Divider( thickness: 1),
+          Expanded(
+            child:
+              SingleChildScrollView(
+                padding: EdgeInsets.all(16),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _textTitle(label: 'Project Description:'),
-                    _textFormField(
-                        controller: _descCtrl,
-                        hintText: 'Describe your project requirements',
-                        maxLength: 1000,
-                        multiline: true
-                    ),
-
-                    _textTitle(label: 'Start Date (dd/mm/yyyy):'),
-                    _textFormFieldDate(
-                        valueKey: 'Start',
-                        controller: _startDateCtrl,
-                        enabled: false,
-                        fct: () {_pickStartDateDialog();},
-                        hint: 'Select Project Start Date'
-                    ),
-
-                    _textTitle(label: 'End Date (dd/mm/yyyy):'),
-                    _textFormFieldDate(
-                        valueKey: 'End',
-                        controller: _endDateCtrl,
-                        enabled: false,
-                        fct: () {_pickEndDateDialog();},
-                        hint: 'Select Project End Date'
-                    ),
-
-                    _textTitle(label: 'Offer Rate:'),
-                    _textFormField(
-                        controller: _rateCtrl,
-                        hintText: ' Enter amount',
-                        maxLength: 10,
-                        hideCounter: true,
-                        prefix: Text(_currencyFormatter.currencySymbol),
-                        keyboardType: TextInputType.number
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 10.0),
-                      child: Divider(thickness: 1),
-                    ),
-                    Text(
-                      'Recruiter Contact',
-                      style: TextStyle(fontSize: 25,fontWeight: FontWeight.bold),
-                    ),
-                    _textTitle(label: 'Name:'),
-                    _textFormField(
-                        controller: _rNameCtrl,
-                        hintText: ' Recruiter Name',
-                        maxLength: 50,
-                        hideCounter: true,
-                        keyboardType: TextInputType.text
-                    ),
-
-                    _textTitle(label: 'Phone No.:'),
-                    _textFormField(
-                        controller: _rPhoneCtrl,
-                        hintText: ' Recruiter Phone No.',
-                        maxLength: 10,
-                        hideCounter: true,
-                        keyboardType: TextInputType.number
-                    ),
-
-                    _textTitle(label: 'Email:'),
-                    _textFormField(
-                        controller: _rEmailCtrl,
-                        hintText: ' Recruiter Email',
-                        maxLength: 50,
-                        hideCounter: true,
-                        keyboardType: TextInputType.text
-                    ),
-                  ],
-                ),
-            ),
-            const SizedBox(height: 30),
-            ElevatedButton(
-                onPressed: _isSubmitting
-                    ?  null
-                    : () {
-                  if (_formKey.currentState!.validate()) {
-                    showDialog(
-                        context: context,
-                        builder: (context) =>
-                        AlertDialog(
-                          backgroundColor: Colors.white,
-                          title: const Text("Offer Confirmation"),
-                          content:  Text(
-                              "Are you sure you want to offer the job for ${data['name']} ?"),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.of(context).pop(),
-                              child: const Text("Cancel", style: TextStyle(color: Colors.red),),
+                    Form(
+                      key: _formKey,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _textTitle(label: 'Project Description:'),
+                            _textFormField(
+                                controller: _descCtrl,
+                                hintText: 'Describe your project requirements',
+                                maxLength: 1000,
+                                multiline: true
                             ),
-                            ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF689f77),
-                              ),
-                              onPressed: () {
-                                Navigator.of(context).pop();
-                                _submitOffer();
-                              },
-                              child: const Text("Confirm",
-                                  style: TextStyle(color: Colors.white)),
+
+                            _textTitle(label: 'Start Date (dd/mm/yyyy):'),
+                            _textFormFieldDate(
+                                valueKey: 'Start',
+                                controller: _startDateCtrl,
+                                enabled: false,
+                                fct: () {_pickStartDateDialog();},
+                                hint: 'Select Project Start Date'
+                            ),
+
+                            _textTitle(label: 'End Date (dd/mm/yyyy):'),
+                            _textFormFieldDate(
+                                valueKey: 'End',
+                                controller: _endDateCtrl,
+                                enabled: false,
+                                fct: () {_pickEndDateDialog();},
+                                hint: 'Select Project End Date'
+                            ),
+
+                            _textTitle(label: 'Offer Rate:'),
+                            _textFormField(
+                                controller: _rateCtrl,
+                                hintText: ' Enter amount',
+                                maxLength: 10,
+                                hideCounter: true,
+                                prefix: Text(_currencyFormatter.currencySymbol),
+                                keyboardType: TextInputType.number
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 10.0),
+                              child: Divider(thickness: 1),
+                            ),
+                            Text(
+                              'Recruiter Contact',
+                              style: TextStyle(fontSize: 25,fontWeight: FontWeight.bold),
+                            ),
+                            _textTitle(label: 'Name:'),
+                            _textFormField(
+                                controller: _rNameCtrl,
+                                hintText: ' Recruiter Name',
+                                maxLength: 50,
+                                hideCounter: true,
+                                keyboardType: TextInputType.text
+                            ),
+
+                            _textTitle(label: 'Phone No.:'),
+                            _textFormField(
+                                controller: _rPhoneCtrl,
+                                hintText: ' Recruiter Phone No.',
+                                maxLength: 10,
+                                hideCounter: true,
+                                keyboardType: TextInputType.number
+                            ),
+
+                            _textTitle(label: 'Email:'),
+                            _textFormField(
+                                controller: _rEmailCtrl,
+                                hintText: ' Recruiter Email',
+                                maxLength: 50,
+                                hideCounter: true,
+                                keyboardType: TextInputType.text
                             ),
                           ],
                         ),
-                    );
-                  }
-                },
+                    ),
+                    const SizedBox(height: 30),
+                    ElevatedButton(
+                        onPressed: _isSubmitting
+                            ?  null
+                            : () {
+                          if (_formKey.currentState!.validate()) {
+                            showDialog(
+                                context: context,
+                                builder: (context) =>
+                                AlertDialog(
+                                  backgroundColor: Colors.white,
+                                  title: const Text("Offer Confirmation"),
+                                  content:  Text(
+                                      "Are you sure you want to offer the job for ${data['name']} ?"),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => Navigator.of(context).pop(),
+                                      child: const Text("Cancel", style: TextStyle(color: Colors.red),),
+                                    ),
+                                    ElevatedButton(
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: const Color(0xFF689f77),
+                                      ),
+                                      onPressed: () {
+                                        Navigator.of(context).pop();
+                                        _submitOffer();
+                                      },
+                                      child: const Text("Confirm",
+                                          style: TextStyle(color: Colors.white)),
+                                    ),
+                                  ],
+                                ),
+                            );
+                          }
+                        },
 
-              style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF689f77),
-                  minimumSize: const Size.fromHeight(50),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(30),
-                  ),
+                      style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF689f77),
+                          minimumSize: const Size.fromHeight(50),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                      ),
+                      child:
+                      _isSubmitting
+                          ? const CircularProgressIndicator(color: Colors.white)
+                          : const Text(
+                        'SUBMIT',
+                        style: TextStyle(fontSize: 18, color: Colors.white),
+                      ),
+                    )
+                  ],
+                ),
               ),
-              child:
-              _isSubmitting
-                  ? const CircularProgressIndicator(color: Colors.white)
-                  : const Text(
-                'SUBMIT',
-                style: TextStyle(fontSize: 18, color: Colors.white),
-              ),
-            )
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
