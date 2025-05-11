@@ -43,6 +43,18 @@ class _AllContestsScreenState extends State<AllContestsScreen> {
     });
   }
 
+  Future<void> addUserToContestParticipants(String contestId, String userEmail) async {
+    try {
+      final contestRef = FirebaseFirestore.instance.collection('contests').doc(contestId);
+      await contestRef.update({
+        'participants': FieldValue.arrayUnion([userEmail])
+      });
+      print('User $userEmail added to participants for contest $contestId');
+    } catch (e) {
+      print('Error adding user to participants: $e');
+    }
+  }
+
   Future<void> _checkContestWinnerNotification() async {
     debugPrint('_checkContestWinnerNotification() invoked');
     final currentUser = FirebaseAuth.instance.currentUser;
@@ -84,10 +96,7 @@ class _AllContestsScreenState extends State<AllContestsScreen> {
         final votes = (entryData['votes'] as List?)?.cast<String>() ?? [];
         voteCounts[entryId] = votes.length;
 
-        // ---- MODIFIED LINE ----
-        // The field name for the entry creator's email is 'createdBy'
         String? creatorEmail = entryData['createdBy'] as String?;
-        // ---- END MODIFICATION ----
 
         debugPrint('For Entry ID: $entryId, Retrieved creatorEmail: $creatorEmail from field "createdBy"');
 
@@ -101,7 +110,6 @@ class _AllContestsScreenState extends State<AllContestsScreen> {
       }
 
       // Find the entry with the most votes
-      // Make sure there's at least one entry before calling reduce, or handle empty voteCounts
       final winningEntryId = voteCounts.entries.reduce((a, b) => a.value >= b.value ? a : b).key;
       final actualWinnerEmail = entryCreatorEmails[winningEntryId] ?? '';
 
@@ -142,25 +150,21 @@ class _AllContestsScreenState extends State<AllContestsScreen> {
 
       // Now, send notifications to participants who didn't win
 
-      // ADD THIS DEBUG PRINT:
       final participants = List<String>.from(contestData['participants'] as List? ?? []);
-      // ---- KEY DEBUG PRINT #1 ----
       debugPrint('For contest "$contestTitle": Participants list from Firestore: $participants. Actual winner: $actualWinnerEmail');
 
       // Now, send notifications to participants who didn't win
       for (final participantEmail in participants) {
-        // ---- KEY DEBUG PRINT #2 ----
         debugPrint('For contest "$contestTitle": Processing participant "$participantEmail" for non-winner_notification. IsNotEmpty: ${participantEmail.isNotEmpty}. IsActualWinner: ${participantEmail == actualWinnerEmail}');
 
         if (participantEmail.isNotEmpty && participantEmail != actualWinnerEmail) {
-          // ---- KEY DEBUG PRINT #3 ----
           debugPrint('📩 For contest "$contestTitle": Attempting to send non-winner notification to: $participantEmail');
           await notificationHandler.sendNotification(
             theEmail: participantEmail,
             title: "Contest '$contestTitle' Ended",
             message: "The contest '$contestTitle' has ended. Thank you for participating!",
           );
-          // Optional: Add a log to confirm the API call was made
+          // Add a log to confirm the API call was made
           debugPrint('Notification API call completed for $participantEmail in contest "$contestTitle".');
         } else {
           if (participantEmail.isEmpty) {
