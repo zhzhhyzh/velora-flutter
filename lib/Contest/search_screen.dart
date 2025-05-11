@@ -45,10 +45,9 @@ class _AllContestsScreenState extends State<AllContestsScreen> {
 
   Future<void> _checkContestWinnerNotification() async {
     debugPrint('_checkContestWinnerNotification() invoked');
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) return;
 
-    final userEmail = user.email;
     final notificationHandler = NotificationHandler();
 
     final contestSnapshot = await FirebaseFirestore.instance
@@ -59,74 +58,121 @@ class _AllContestsScreenState extends State<AllContestsScreen> {
     for (final contestDoc in contestSnapshot.docs) {
       final contestData = contestDoc.data();
       final contestId = contestDoc.id;
-      final contestTitle = contestData['title'];
-      final notified = contestData['winnerNotified'] ?? false;
+      final contestTitle = contestData['title'] as String? ?? 'Untitled Contest';
+      final notified = contestData['winnerNotified'] as bool? ?? false;
+      // This is the creator of the CONTEST
+      final contestCreatorEmail = contestData['createdBy'] as String?;
 
-      // Skip if already notified
-      if (notified == true) continue;
+      if (notified == true) {
+        debugPrint('Contest "$contestTitle" (ID: $contestId) already notified.');
+        continue;
+      }
 
-      debugPrint('Checking contest: $contestTitle');
+      debugPrint('Checking contest: "$contestTitle" (ID: $contestId)');
 
-      final participants = List<String>.from(contestData['participants'] ?? []);
       final entriesSnapshot = await contestDoc.reference.collection('entries').get();
 
-      // Map of entryId -> voteCount
       Map<String, int> voteCounts = {};
-      Map<String, String> entryOwners = {};
+      Map<String, String> entryCreatorEmails = {}; // Stores entryId -> email of the entry's creator
 
       for (final entryDoc in entriesSnapshot.docs) {
         final entryData = entryDoc.data();
-        final votes = (entryData['votes'] as List?)?.cast<String>() ?? [];
-        voteCounts[entryDoc.id] = votes.length;
+        final entryId = entryDoc.id;
 
-        // Assuming `createdBy` or `userEmail` identifies the owner
-        entryOwners[entryDoc.id] = votes.isNotEmpty ? votes.last : ''; // Simplified assumption
+        debugPrint('Processing Entry ID: $entryId, Data: $entryData');
+
+        final votes = (entryData['votes'] as List?)?.cast<String>() ?? [];
+        voteCounts[entryId] = votes.length;
+
+        // ---- MODIFIED LINE ----
+        // The field name for the entry creator's email is 'createdBy'
+        String? creatorEmail = entryData['createdBy'] as String?;
+        // ---- END MODIFICATION ----
+
+        debugPrint('For Entry ID: $entryId, Retrieved creatorEmail: $creatorEmail from field "createdBy"');
+
+        entryCreatorEmails[entryId] = creatorEmail ?? '';
       }
 
       if (voteCounts.isEmpty) {
-        debugPrint('No entries or votes for contest: $contestTitle');
+        debugPrint('No entries or votes for contest: "$contestTitle"');
+        await contestDoc.reference.update({'winnerNotified': true, 'winnerEmail': null});
         continue;
       }
 
       // Find the entry with the most votes
+      // Make sure there's at least one entry before calling reduce, or handle empty voteCounts
       final winningEntryId = voteCounts.entries.reduce((a, b) => a.value >= b.value ? a : b).key;
-      final winnerEmail = entryOwners[winningEntryId] ?? '';
+      final actualWinnerEmail = entryCreatorEmails[winningEntryId] ?? '';
 
-      debugPrint('Winning entry: $winningEntryId with $winnerEmail');
+      debugPrint('Winning entry for "$contestTitle": $winningEntryId, Winner Email: $actualWinnerEmail');
 
-      // Update contest with the winner's email and mark the contest as notified
       await contestDoc.reference.update({
-        'winnerEmail': winnerEmail,
+        'winnerEmail': actualWinnerEmail.isNotEmpty ? actualWinnerEmail : null,
         'winnerNotified': true,
       });
 
-      // Send notification to the winner
-      await notificationHandler.sendNotification(
-        theEmail: winnerEmail,
-        title: "You Won!",
-        message: "You are the winner of the '$contestTitle' contest!",
-      );
+      // Send notification to the actual winner (creator of the winning entry)
+      if (actualWinnerEmail.isNotEmpty) {
+        debugPrint('🏆 Sending WINNER notification to: $actualWinnerEmail for contest "$contestTitle"');
+        await notificationHandler.sendNotification(
+          theEmail: actualWinnerEmail,
+          title: "🎉 You Won! 🎉",
+          message: "Congratulations! Your entry won the '$contestTitle' contest!",
+        );
+      } else {
+        debugPrint('Winner email is empty for contest "$contestTitle", winning entry ID: $winningEntryId. No winner notification sent.');
+      }
 
-      // Send notification to the contest creator (admin or the user who initiated the contest)
-      await notificationHandler.sendNotification(
-        theEmail: userEmail!,
-        title: "Contest Ended",
-        message: "The contest '$contestTitle' has ended. A winner was chosen.",
-      );
+      // Send notification to the contest creator (jas@gmail.com in this example)
+      if (contestCreatorEmail != null && contestCreatorEmail.isNotEmpty) {
+        if (contestCreatorEmail != actualWinnerEmail || actualWinnerEmail.isEmpty) {
+          debugPrint('🔔 Sending CONTEST ENDED notification to contest creator: $contestCreatorEmail for contest "$contestTitle"');
+          await notificationHandler.sendNotification(
+            theEmail: contestCreatorEmail,
+            title: "Contest '$contestTitle' Has Ended",
+            message: "The contest '$contestTitle' has concluded. A winner has been determined.",
+          );
+        } else {
+          debugPrint('Contest creator ($contestCreatorEmail) is also the winner for "$contestTitle". Skipping redundant "Contest Ended" notification.');
+        }
+      } else {
+        debugPrint('Contest creator email is null or empty for contest "$contestTitle". No creator notification sent.');
+      }
+
+      // Now, send notifications to participants who didn't win
+
+      // ADD THIS DEBUG PRINT:
+      final participants = List<String>.from(contestData['participants'] as List? ?? []);
+      // ---- KEY DEBUG PRINT #1 ----
+      debugPrint('For contest "$contestTitle": Participants list from Firestore: $participants. Actual winner: $actualWinnerEmail');
 
       // Now, send notifications to participants who didn't win
       for (final participantEmail in participants) {
-        if (participantEmail != winnerEmail && participantEmail.isNotEmpty) {
-          debugPrint('📩 Sending non-winner notification to: $participantEmail');
+        // ---- KEY DEBUG PRINT #2 ----
+        debugPrint('For contest "$contestTitle": Processing participant "$participantEmail" for non-winner_notification. IsNotEmpty: ${participantEmail.isNotEmpty}. IsActualWinner: ${participantEmail == actualWinnerEmail}');
 
+        if (participantEmail.isNotEmpty && participantEmail != actualWinnerEmail) {
+          // ---- KEY DEBUG PRINT #3 ----
+          debugPrint('📩 For contest "$contestTitle": Attempting to send non-winner notification to: $participantEmail');
           await notificationHandler.sendNotification(
             theEmail: participantEmail,
-            title: "Contest Ended",
-            message: "The contest '$contestTitle' has ended. Unfortunately, you did not win this time, but thank you for participating!",
+            title: "Contest '$contestTitle' Ended",
+            message: "The contest '$contestTitle' has ended. Thank you for participating!",
           );
+          // Optional: Add a log to confirm the API call was made
+          debugPrint('Notification API call completed for $participantEmail in contest "$contestTitle".');
+        } else {
+          if (participantEmail.isEmpty) {
+            debugPrint('For contest "$contestTitle": Skipped participant "$participantEmail" because email string is empty.');
+          }
+          if (participantEmail == actualWinnerEmail) {
+            debugPrint('For contest "$contestTitle": Skipped participant "$participantEmail" because they are the actual winner.');
+          }
         }
       }
     }
+    debugPrint('_checkContestWinnerNotification() finished.');
   }
 
   Future<void> _loadLocalContests() async {
