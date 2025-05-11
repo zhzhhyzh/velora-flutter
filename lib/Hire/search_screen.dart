@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:velora2/Hire/edit_desinger_form.dart';
 import '../Services/global_dropdown.dart';
+import '../Services/global_methods.dart';
 import 'tab_filtered_designer.dart';
 
 import '../Widgets/bottom_nav_bar.dart';
@@ -20,7 +21,8 @@ class _AllHiresScreenState extends State<AllHiresScreen> {
   bool _isSearching = false;
   TextEditingController _searchController = TextEditingController();
 
-  String? _designCatFilter;
+  String? countryFilter;
+  String? stateFilter;
   int _selectedTabIndex = 0;
   final tabs = ['All Designer', ...GlobalDD.designCategoryList ]; //... make tabs a List<String> instead of List<Object>
   @override
@@ -136,7 +138,6 @@ class _AllHiresScreenState extends State<AllHiresScreen> {
               onSelected: (selected) {
                   setState(() {
                     _selectedTabIndex = index;
-                    _designCatFilter = index == 0 ? null : tabs[index];
                   });
               },
               showCheckmark: false,
@@ -160,7 +161,8 @@ class _AllHiresScreenState extends State<AllHiresScreen> {
     if (_selectedTabIndex >= 0 && _selectedTabIndex <= 9) {
       return FilteredTab(
         searchQuery: _searchQuery,
-        designCategory: _designCatFilter,
+        country : countryFilter,
+        state : stateFilter
       );
     } else {
       return const Center(child: Text('Invalid tab selected'));
@@ -195,37 +197,64 @@ class _AllHiresScreenState extends State<AllHiresScreen> {
           content: SingleChildScrollView(
             child: Column(
               children: [
-                Padding(padding: const EdgeInsets.symmetric(vertical: 8),
-                child: DropdownButtonFormField<String>(
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: DropdownButtonFormField<String>(
+                    isExpanded: true,
+                    value: countryFilter,
+                    hint: Text("Select Country", style: TextStyle(color: Color(0xFFD9D9D9))),
+                    decoration: _dropdownDecoration(),
+                    dropdownColor: Colors.black87,
+                    iconEnabledColor: Colors.white,
+                    style: const TextStyle(color: Colors.white),
+                    items: GlobalDD.countries.map(
+                            (item) => DropdownMenuItem(value: item, child: Text(item))
+                    ).toList(),
+                    onChanged: (val) => setState(() {
+                      countryFilter = val!;
+                      stateFilter = null;
+                    }),
+                  ),
+                ),
+                countryFilter == ''
+                    ? GestureDetector(
+                  onTap: () {
+                    GlobalMethod.showErrorDialog(
+                      error: "Please select country first",
+                      ctx: context,
+                    );
+                  },
+                  child: InputDecorator(
+                    decoration: _dropdownDecoration(),
+                    child: Text(
+                      "Select State",
+                      style: TextStyle(color: Color(0xFFD9D9D9)),
+                    ),
+                  ),
+                )
+                    : DropdownButtonFormField<String>(
                   isExpanded: true,
-                  value: GlobalDD.designCategoryList.contains(_designCatFilter) ? _designCatFilter : null,
-                  hint: Text('Designer Category', style: TextStyle(color: Color(0xFFD9D9D9))),
+                  value: stateFilter,
+                  hint: Text("Select State", style: TextStyle(color: Color(0xFFD9D9D9))),
                   decoration: _dropdownDecoration(),
                   dropdownColor: Colors.black87,
                   iconEnabledColor: Colors.white,
                   style: const TextStyle(color: Colors.white),
-                  items:
-                    GlobalDD.designCategoryList
-                    .map((item) => DropdownMenuItem(value: item, child: Text(item)))
-                    .toList(),
-                  onChanged: (val) {
-                    setState(() {
-                      _designCatFilter = val;
-                      _selectedTabIndex = tabs.indexOf(val ?? '');
-                    });
-                  },
+                  items: (GlobalDD.states[countryFilter] ?? [])
+                      .map((item) => DropdownMenuItem(value: item, child: Text(item)))
+                      .toList(),
+                  onChanged: (val) => setState(() => stateFilter = val),
                 ),
-                )
               ],
-            ),
+            )
           ),
           actions: [
             TextButton(
               onPressed: (){
                 setState(() {
-                  _designCatFilter = null;
+                  countryFilter = null;
+                  stateFilter = null;
                 });
-                Navigator.pop(context);
               },
               child: Text('Clear', style: TextStyle(color: Colors.red))
             ),
@@ -242,6 +271,31 @@ class _AllHiresScreenState extends State<AllHiresScreen> {
           ],
         );
       }
+    );
+  }
+
+  Widget _buildDropdown({
+    required String label,
+    required String? value,
+    required List<String> items,
+    required void Function(String?) onChanged,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: DropdownButtonFormField<String>(
+        isExpanded: true,
+        value: items.contains(value) ? value : null,
+        hint: Text("Select $label", style: TextStyle(color: Color(0xFFD9D9D9))),
+        decoration: _dropdownDecoration(),
+        dropdownColor: Colors.black87,
+        iconEnabledColor: Colors.white,
+        style: const TextStyle(color: Colors.white),
+        items:
+        items
+            .map((item) => DropdownMenuItem(value: item, child: Text(item)))
+            .toList(),
+        onChanged: onChanged,
+      ),
     );
   }
 
