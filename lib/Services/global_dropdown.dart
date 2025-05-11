@@ -25,7 +25,7 @@ class GlobalDD{
   ];
  static final List<String> countries = ['Malaysia', 'United States', 'India'];
 
-  static final List<String> categories = const [
+  static final List<String> designCategories = const [
     'Web Design', 'Mobile Design', 'Fashion Design', 'Packaging Design',
     'Advertising Design', 'Graphic Design', 'Interior Design', 'Architecture Design',
     'Logo Design', 'Animation Design'
