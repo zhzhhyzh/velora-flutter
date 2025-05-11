@@ -6,6 +6,9 @@ import '../Models/comment_model.dart';
 import 'services/project_service.dart';
 import 'services/comment_service.dart';
 import 'dart:convert';
+import 'package:path_provider/path_provider.dart';
+import 'package:flutter/foundation.dart';
+import 'dart:io';
 
 class ProjectDetailsScreen extends StatefulWidget {
   final Project project;
@@ -255,10 +258,35 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
         actions: [
           IconButton(
           icon: const Icon(Icons.share, color: Colors.black),
-            onPressed: () {
-            Share.share(
-              'Check out this amazing project: ${_currentProject!.title}\n${_currentProject!.description}',
-              );
+            onPressed: () async {
+              try {
+                // Create a temporary file for the image
+                final tempDir = await getTemporaryDirectory();
+                final file = File('${tempDir.path}/project_image.jpg');
+                await file.writeAsBytes(base64Decode(_currentProject!.imageUrl));
+                
+                await Share.shareXFiles(
+                  [XFile(file.path)],
+                  text: 'Check out this amazing project in our app!\n\n'
+                      'Title : ${_currentProject!.title}\n'
+                      'Description : ${_currentProject!.description}\n\n'
+                      'By :  ${_currentProject!.designerName}\n'
+                      'Category: ${_currentProject!.category}\n\n'
+                      'Download our app to view more creative projects and connect with talented designers!',
+                );
+
+                // Clean up the temporary file after sharing
+                await file.delete();
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Error sharing: $e'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              }
             },
           ),
         ],

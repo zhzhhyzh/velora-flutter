@@ -6,13 +6,15 @@ class Project {
   final String description;
   final String designerId;
   final String designerName;
+  final String? designerImage;
   final String category;
   final String imageUrl;
   final int views;
   final int likes;
-  final int commentCount;  // Instead of storing comments array, we'll just store the count
+  final int commentCount;
   final DateTime createdAt;
   final List<String> tags;
+  final bool isLiked;
 
   Project({
     required this.id,
@@ -20,6 +22,7 @@ class Project {
     required this.description,
     required this.designerId,
     required this.designerName,
+    this.designerImage,
     required this.category,
     required this.imageUrl,
     required this.views,
@@ -27,15 +30,16 @@ class Project {
     required this.commentCount,
     required this.createdAt,
     required this.tags,
+    this.isLiked = false,
   });
 
   Map<String, dynamic> toMap() {
     return {
-      'id': id,
       'title': title,
       'description': description,
       'designerId': designerId,
       'designerName': designerName,
+      'designerImage': designerImage,
       'category': category,
       'imageUrl': imageUrl,
       'views': views,
@@ -53,14 +57,50 @@ class Project {
       title: data['title'] ?? '',
       description: data['description'] ?? '',
       designerId: data['designerId'] ?? '',
-      designerName: data['designerName'] ?? '',
+      designerName: data['designerName'] ?? 'Unknown User',
+      designerImage: data['designerImage'],
       category: data['category'] ?? '',
       imageUrl: data['imageUrl'] ?? '',
       views: data['views'] ?? 0,
       likes: data['likes'] ?? 0,
       commentCount: data['commentCount'] ?? 0,
-      createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      createdAt: (data['createdAt'] as Timestamp).toDate(),
       tags: List<String>.from(data['tags'] ?? []),
+      isLiked: data['isLiked'] ?? false,
+    );
+  }
+
+  Project copyWith({
+    String? id,
+    String? title,
+    String? description,
+    String? designerId,
+    String? designerName,
+    String? designerImage,
+    String? category,
+    String? imageUrl,
+    int? views,
+    int? likes,
+    int? commentCount,
+    DateTime? createdAt,
+    List<String>? tags,
+    bool? isLiked,
+  }) {
+    return Project(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      description: description ?? this.description,
+      designerId: designerId ?? this.designerId,
+      designerName: designerName ?? this.designerName,
+      designerImage: designerImage ?? this.designerImage,
+      category: category ?? this.category,
+      imageUrl: imageUrl ?? this.imageUrl,
+      views: views ?? this.views,
+      likes: likes ?? this.likes,
+      commentCount: commentCount ?? this.commentCount,
+      createdAt: createdAt ?? this.createdAt,
+      tags: tags ?? this.tags,
+      isLiked: isLiked ?? this.isLiked,
     );
   }
 } 

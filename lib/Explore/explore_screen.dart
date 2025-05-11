@@ -455,13 +455,13 @@ class _ExploreScreenState extends State<ExploreScreen> {
           builder: (context, userSnapshot) {
             final designerDetails = userSnapshot.data;
 
-    return GestureDetector(
+            return GestureDetector(
               onTap: () async {
                 await _projectService.incrementViewCount(project.id);
                 if (mounted) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
                       builder: (context) => ProjectDetailsScreen(project: project),
                     ),
                   );
@@ -470,9 +470,9 @@ class _ExploreScreenState extends State<ExploreScreen> {
               child: Card(
                 margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                     ClipRRect(
                       borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
                       child: Image.memory(
@@ -482,78 +482,78 @@ class _ExploreScreenState extends State<ExploreScreen> {
                         fit: BoxFit.cover,
                         errorBuilder: (context, error, stackTrace) => Container(
                           height: 200,
-                  color: Colors.grey.shade300,
+                          color: Colors.grey.shade300,
                           child: const Icon(Icons.error),
-                ),
-              ),
-            ),
-            Padding(
+                        ),
+                      ),
+                    ),
+                    Padding(
                       padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
                           Text(
                             project.title,
                             style: const TextStyle(
                               fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                           const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      GestureDetector(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => UserPostsScreen(
-                                userId: project.designerId,
-                                userName: designerDetails?['name'] ?? 'Unknown User',
-                              ),
-                            ),
-                          );
-                        },
-                        child: Row(
-                          children: [
-                            CircleAvatar(
-                              radius: 12,
-                              backgroundColor: const Color(0xFF689f77),
-                              child: designerDetails != null && designerDetails!['userImage'] != null
-                                ? ClipRRect(
-                                    borderRadius: BorderRadius.circular(12),
-                                    child: Image.memory(
-                                      base64Decode(designerDetails!['userImage']),
-                                      width: 24,
-                                      height: 24,
-                                      fit: BoxFit.cover,
+                          Row(
+                            children: [
+                              GestureDetector(
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => UserPostsScreen(
+                                        userId: project.designerId,
+                                        userName: project.designerName,
+                                      ),
                                     ),
-                                  )
-                                : Text(
-                                    (designerDetails?['name'] ?? 'U')[0].toUpperCase(),
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 12,
+                                  );
+                                },
+                                child: Row(
+                                  children: [
+                                    CircleAvatar(
+                                      radius: 12,
+                                      backgroundColor: const Color(0xFF689f77),
+                                      child: project.designerImage != null
+                                          ? ClipRRect(
+                                              borderRadius: BorderRadius.circular(12),
+                                              child: Image.memory(
+                                                base64Decode(project.designerImage!),
+                                                width: 24,
+                                                height: 24,
+                                                fit: BoxFit.cover,
+                                              ),
+                                            )
+                                          : Text(
+                                              project.designerName[0].toUpperCase(),
+                                              style: const TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 12,
+                                              ),
+                                            ),
                                     ),
-                                  ),
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              'By ${designerDetails?['name'] ?? 'Unknown User'}',
-                              style: TextStyle(
-                                color: Colors.grey.shade600,
-                                fontSize: 14,
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      'By ${project.designerName}',
+                                      style: TextStyle(
+                                        color: Colors.grey.shade600,
+                                        fontSize: 14,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                ),
                               ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
                             children: [
                               Icon(
                                 isLiked ? Icons.favorite : Icons.favorite_border,
@@ -594,20 +594,20 @@ class _ExploreScreenState extends State<ExploreScreen> {
                                 style: const TextStyle(
                                   color: Colors.grey,
                                   fontSize: 12,
-                        ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                ],
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
-        ),
-      ),
-    );
+            );
           },
-                  );
-                },
+        );
+      },
     );
   }
 } 

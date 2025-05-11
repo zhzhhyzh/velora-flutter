@@ -37,7 +37,6 @@ class MaxValueInputFormatter extends TextInputFormatter {
   final int max;
 
   MaxValueInputFormatter(this.max);
-
   @override
   TextEditingValue formatEditUpdate(
       TextEditingValue oldValue,
@@ -55,6 +54,8 @@ class MaxValueInputFormatter extends TextInputFormatter {
 
 class _CreateJobState extends State<CreateJob> {
   String buttonText = 'Post Now';
+   String content = "Create Job";
+
   bool _isLoading = false;
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _jobCatController = TextEditingController(
@@ -130,7 +131,7 @@ class _CreateJobState extends State<CreateJob> {
           });
         });
       }
-
+      content = "Manage Job";
 
     }
   }
@@ -588,7 +589,7 @@ class _CreateJobState extends State<CreateJob> {
     Size size = MediaQuery.of(context).size;
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: TheAppBar(content: "Create Job", style: 2),
+      appBar: TheAppBar(content: content, style: 2),
       body: SafeArea(
         child: SingleChildScrollView(
           child: Padding(
