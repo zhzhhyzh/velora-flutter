@@ -4,12 +4,14 @@ import 'package:velora2/Hire/Widgets/designer_card.dart';
 
 class FilteredTab extends StatefulWidget {
   final String searchQuery;
-  final String? designCategory;
+  final String? country;
+  final String? state;
 
   const FilteredTab({
     super.key,
     required this.searchQuery,
-    required this.designCategory,
+    required this.country,
+    required this.state
   });
 
   @override
@@ -52,10 +54,11 @@ class _FilteredTabState extends State<FilteredTab> {
   Widget build(BuildContext context) {
     final filteredDesigners = _designers.where((designer) {
       final data = designer['data'] as Map<String, dynamic>;
-      final matchesCategory = widget.designCategory == null || widget.designCategory == data['category'];
+      final matchesCountry = widget.country == null || widget.country == data['country'];
+      final matchesState = widget.state == null || widget.state == data['state'];
       final matchesSearch = widget.searchQuery.isEmpty ||
           (data['name'] ?? '').toString().toLowerCase().contains(widget.searchQuery.toLowerCase());
-      return matchesCategory && matchesSearch;
+      return matchesCountry && matchesState && matchesSearch;
     }).toList();
 
     if (_isLoading) {
