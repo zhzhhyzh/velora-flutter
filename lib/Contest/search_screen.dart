@@ -67,7 +67,7 @@ class _AllContestsScreenState extends State<AllContestsScreen> {
 
       debugPrint('Checking contest: $contestTitle');
 
-      // Fetch entries for this contest
+      final participants = List<String>.from(contestData['participants'] ?? []);
       final entriesSnapshot = await contestDoc.reference.collection('entries').get();
 
       // Map of entryId -> voteCount
@@ -115,15 +115,12 @@ class _AllContestsScreenState extends State<AllContestsScreen> {
       );
 
       // Now, send notifications to participants who didn't win
-      for (final entryDoc in entriesSnapshot.docs) {
-        final entryData = entryDoc.data();
-        final entryEmail = entryData['createdBy'] ?? ''; // Assuming 'createdBy' field is the participant's email
-
-        if (entryEmail != winnerEmail && entryEmail.isNotEmpty) {
-          debugPrint('Sending non-winner notification to: $entryEmail');
+      for (final participantEmail in participants) {
+        if (participantEmail != winnerEmail && participantEmail.isNotEmpty) {
+          debugPrint('📩 Sending non-winner notification to: $participantEmail');
 
           await notificationHandler.sendNotification(
-            theEmail: entryEmail,
+            theEmail: participantEmail,
             title: "Contest Ended",
             message: "The contest '$contestTitle' has ended. Unfortunately, you did not win this time, but thank you for participating!",
           );
