@@ -59,6 +59,7 @@ class _SearchScreenState extends State<SearchScreen> {
 
   final List<String> _timeFrames = [
     'All Time',
+    'Today',
     'This Week',
     'This Month',
     'This Year',
@@ -100,282 +101,284 @@ class _SearchScreenState extends State<SearchScreen> {
           ),
           child: Padding(
             padding: const EdgeInsets.all(16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      'Filter Projects',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Filter Projects',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.close),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 24),
-                const Text(
-                  'Category',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
+                      IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                    ],
                   ),
-                ),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: _categories.asMap().entries.map((entry) {
-                    final index = entry.key;
-                    final category = entry.value;
-                    final isSelected = tempSelectedCategory == index;
-                    return ChoiceChip(
-                      label: Text(category),
-                      selected: isSelected,
-                      onSelected: (selected) {
-                        setDialogState(() {
-                          tempSelectedCategory = selected ? index : 0;
-                        });
-                      },
-                      backgroundColor: Colors.grey.shade200,
-                      selectedColor: const Color(0xFF689f77),
-                      labelStyle: TextStyle(
-                        color: isSelected ? Colors.white : Colors.black,
-                      ),
-                    );
-                  }).toList(),
-                ),
-                const SizedBox(height: 24),
-                const Text(
-                  'Sort By',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
+                  const SizedBox(height: 24),
+                  const Text(
+                    'Category',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    ChoiceChip(
-                      label: const Text('Most Recent'),
-                      selected: tempSelectedSortBy == 'Most Recent',
-                      onSelected: (selected) {
-                        setDialogState(() {
-                          tempSelectedSortBy = selected ? 'Most Recent' : null;
-                        });
-                      },
-                      backgroundColor: Colors.grey.shade200,
-                      selectedColor: const Color(0xFF689f77),
-                      labelStyle: TextStyle(
-                        color: tempSelectedSortBy == 'Most Recent' ? Colors.white : Colors.black,
-                      ),
-                    ),
-                    ChoiceChip(
-                      label: const Text('Most Liked'),
-                      selected: tempSelectedSortBy == 'Most Liked',
-                      onSelected: (selected) {
-                        setDialogState(() {
-                          tempSelectedSortBy = selected ? 'Most Liked' : null;
-                        });
-                      },
-                      backgroundColor: Colors.grey.shade200,
-                      selectedColor: const Color(0xFF689f77),
-                      labelStyle: TextStyle(
-                        color: tempSelectedSortBy == 'Most Liked' ? Colors.white : Colors.black,
-                      ),
-                    ),
-                    ChoiceChip(
-                      label: const Text('Most Viewed'),
-                      selected: tempSelectedSortBy == 'Most Viewed',
-                      onSelected: (selected) {
-                        setDialogState(() {
-                          tempSelectedSortBy = selected ? 'Most Viewed' : null;
-                        });
-                      },
-                      backgroundColor: Colors.grey.shade200,
-                      selectedColor: const Color(0xFF689f77),
-                      labelStyle: TextStyle(
-                        color: tempSelectedSortBy == 'Most Viewed' ? Colors.white : Colors.black,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 24),
-                const Text(
-                  'Time Frame',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: _categories.asMap().entries.map((entry) {
+                      final index = entry.key;
+                      final category = entry.value;
+                      final isSelected = tempSelectedCategory == index;
+                      return ChoiceChip(
+                        label: Text(category),
+                        selected: isSelected,
+                        onSelected: (selected) {
+                          setDialogState(() {
+                            tempSelectedCategory = selected ? index : 0;
+                          });
+                        },
+                        backgroundColor: Colors.grey.shade200,
+                        selectedColor: const Color(0xFF689f77),
+                        labelStyle: TextStyle(
+                          color: isSelected ? Colors.white : Colors.black,
+                        ),
+                      );
+                    }).toList(),
                   ),
-                ),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    ChoiceChip(
-                      label: const Text('Today'),
-                      selected: tempSelectedTimeFrame == 'Today',
-                      onSelected: (selected) {
-                        setDialogState(() {
-                          tempSelectedTimeFrame = selected ? 'Today' : 'All Time';
-                        });
-                      },
-                      backgroundColor: Colors.grey.shade200,
-                      selectedColor: const Color(0xFF689f77),
-                      labelStyle: TextStyle(
-                        color: tempSelectedTimeFrame == 'Today' ? Colors.white : Colors.black,
-                      ),
+                  const SizedBox(height: 24),
+                  const Text(
+                    'Sort By',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
                     ),
-                    ChoiceChip(
-                      label: const Text('This Week'),
-                      selected: tempSelectedTimeFrame == 'This Week',
-                      onSelected: (selected) {
-                        setDialogState(() {
-                          tempSelectedTimeFrame = selected ? 'This Week' : 'All Time';
-                        });
-                      },
-                      backgroundColor: Colors.grey.shade200,
-                      selectedColor: const Color(0xFF689f77),
-                      labelStyle: TextStyle(
-                        color: tempSelectedTimeFrame == 'This Week' ? Colors.white : Colors.black,
+                  ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      ChoiceChip(
+                        label: const Text('Most Recent'),
+                        selected: tempSelectedSortBy == 'Most Recent',
+                        onSelected: (selected) {
+                          setDialogState(() {
+                            tempSelectedSortBy = selected ? 'Most Recent' : null;
+                          });
+                        },
+                        backgroundColor: Colors.grey.shade200,
+                        selectedColor: const Color(0xFF689f77),
+                        labelStyle: TextStyle(
+                          color: tempSelectedSortBy == 'Most Recent' ? Colors.white : Colors.black,
+                        ),
                       ),
-                    ),
-                    ChoiceChip(
-                      label: const Text('This Month'),
-                      selected: tempSelectedTimeFrame == 'This Month',
-                      onSelected: (selected) {
-                        setDialogState(() {
-                          tempSelectedTimeFrame = selected ? 'This Month' : 'All Time';
-                        });
-                      },
-                      backgroundColor: Colors.grey.shade200,
-                      selectedColor: const Color(0xFF689f77),
-                      labelStyle: TextStyle(
-                        color: tempSelectedTimeFrame == 'This Month' ? Colors.white : Colors.black,
+                      ChoiceChip(
+                        label: const Text('Most Popular'),
+                        selected: tempSelectedSortBy == 'Most Popular',
+                        onSelected: (selected) {
+                          setDialogState(() {
+                            tempSelectedSortBy = selected ? 'Most Popular' : null;
+                          });
+                        },
+                        backgroundColor: Colors.grey.shade200,
+                        selectedColor: const Color(0xFF689f77),
+                        labelStyle: TextStyle(
+                          color: tempSelectedSortBy == 'Most Popular' ? Colors.white : Colors.black,
+                        ),
                       ),
+                      ChoiceChip(
+                        label: const Text('Most Liked'),
+                        selected: tempSelectedSortBy == 'Most Liked',
+                        onSelected: (selected) {
+                          setDialogState(() {
+                            tempSelectedSortBy = selected ? 'Most Liked' : null;
+                          });
+                        },
+                        backgroundColor: Colors.grey.shade200,
+                        selectedColor: const Color(0xFF689f77),
+                        labelStyle: TextStyle(
+                          color: tempSelectedSortBy == 'Most Liked' ? Colors.white : Colors.black,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                  const Text(
+                    'Time Frame',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
                     ),
-                    ChoiceChip(
-                      label: const Text('Custom'),
-                      selected: tempSelectedTimeFrame == 'Custom',
-                      onSelected: (selected) async {
-                        if (selected) {
-                          final DateTimeRange? picked = await showDateRangePicker(
-                            context: context,
-                            firstDate: DateTime(2020),
-                            lastDate: DateTime.now(),
-                            initialDateRange: tempCustomDateRange,
-                            builder: (context, child) {
-                              return Theme(
-                                data: Theme.of(context).copyWith(
-                                  colorScheme: const ColorScheme.light(
-                                    primary: Color(0xFF689f77),
-                                    onPrimary: Colors.white,
-                                    surface: Colors.white,
-                                    onSurface: Colors.black,
-                                    background: Colors.white,
-                                    onBackground: Colors.black,
+                  ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      ChoiceChip(
+                        label: const Text('Today'),
+                        selected: tempSelectedTimeFrame == 'Today',
+                        onSelected: (selected) {
+                          setDialogState(() {
+                            tempSelectedTimeFrame = selected ? 'Today' : 'All Time';
+                          });
+                        },
+                        backgroundColor: Colors.grey.shade200,
+                        selectedColor: const Color(0xFF689f77),
+                        labelStyle: TextStyle(
+                          color: tempSelectedTimeFrame == 'Today' ? Colors.white : Colors.black,
+                        ),
+                      ),
+                      ChoiceChip(
+                        label: const Text('This Week'),
+                        selected: tempSelectedTimeFrame == 'This Week',
+                        onSelected: (selected) {
+                          setDialogState(() {
+                            tempSelectedTimeFrame = selected ? 'This Week' : 'All Time';
+                          });
+                        },
+                        backgroundColor: Colors.grey.shade200,
+                        selectedColor: const Color(0xFF689f77),
+                        labelStyle: TextStyle(
+                          color: tempSelectedTimeFrame == 'This Week' ? Colors.white : Colors.black,
+                        ),
+                      ),
+                      ChoiceChip(
+                        label: const Text('This Month'),
+                        selected: tempSelectedTimeFrame == 'This Month',
+                        onSelected: (selected) {
+                          setDialogState(() {
+                            tempSelectedTimeFrame = selected ? 'This Month' : 'All Time';
+                          });
+                        },
+                        backgroundColor: Colors.grey.shade200,
+                        selectedColor: const Color(0xFF689f77),
+                        labelStyle: TextStyle(
+                          color: tempSelectedTimeFrame == 'This Month' ? Colors.white : Colors.black,
+                        ),
+                      ),
+                      ChoiceChip(
+                        label: const Text('Custom Range'),
+                        selected: tempSelectedTimeFrame == 'Custom Range',
+                        onSelected: (selected) async {
+                          if (selected) {
+                            final DateTimeRange? picked = await showDateRangePicker(
+                              context: context,
+                              firstDate: DateTime(2020),
+                              lastDate: DateTime.now(),
+                              initialDateRange: tempCustomDateRange,
+                              builder: (context, child) {
+                                return Theme(
+                                  data: Theme.of(context).copyWith(
+                                    colorScheme: const ColorScheme.light(
+                                      primary: Color(0xFF689f77),
+                                      onPrimary: Colors.white,
+                                      surface: Colors.white,
+                                      onSurface: Colors.black,
+                                      background: Colors.white,
+                                      onBackground: Colors.black,
+                                    ),
+                                    dialogBackgroundColor: Colors.white,
+                                    scaffoldBackgroundColor: Colors.white,
+                                    appBarTheme: const AppBarTheme(
+                                      backgroundColor: Colors.white,
+                                      foregroundColor: Colors.black,
+                                    ),
                                   ),
-                                  dialogBackgroundColor: Colors.white,
-                                  scaffoldBackgroundColor: Colors.white,
-                                  appBarTheme: const AppBarTheme(
-                                    backgroundColor: Colors.white,
-                                    foregroundColor: Colors.black,
-                                  ),
-                                ),
-                                child: child!,
-                              );
-                            },
-                          );
-                          if (picked != null) {
+                                  child: child!,
+                                );
+                              },
+                            );
+                            if (picked != null) {
+                              setDialogState(() {
+                                tempCustomDateRange = picked;
+                                tempSelectedTimeFrame = 'Custom Range';
+                              });
+                            }
+                          } else {
                             setDialogState(() {
-                              tempCustomDateRange = picked;
-                              tempSelectedTimeFrame = 'Custom';
+                              tempSelectedTimeFrame = 'All Time';
+                              tempCustomDateRange = null;
                             });
                           }
-                        } else {
+                        },
+                        backgroundColor: Colors.grey.shade200,
+                        selectedColor: const Color(0xFF689f77),
+                        labelStyle: TextStyle(
+                          color: tempSelectedTimeFrame == 'Custom Range' ? Colors.white : Colors.black,
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (tempCustomDateRange != null) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      '${tempCustomDateRange!.start.toString().split(' ')[0]} to ${tempCustomDateRange!.end.toString().split(' ')[0]}',
+                      style: const TextStyle(
+                        color: Color(0xFF689f77),
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 24),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      TextButton(
+                        onPressed: () {
                           setDialogState(() {
+                            tempSelectedCategory = 0;
+                            tempSelectedSortBy = 'Most Recent';
                             tempSelectedTimeFrame = 'All Time';
                             tempCustomDateRange = null;
                           });
-                        }
-                      },
-                      backgroundColor: Colors.grey.shade200,
-                      selectedColor: const Color(0xFF689f77),
-                      labelStyle: TextStyle(
-                        color: tempSelectedTimeFrame == 'Custom' ? Colors.white : Colors.black,
+                        },
+                        child: const Text(
+                          'Clear All',
+                          style: TextStyle(
+                            color: Color(0xFF689f77),
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-                if (tempCustomDateRange != null) ...[
-                  const SizedBox(height: 8),
-                  Text(
-                    '${tempCustomDateRange!.start.toString().split(' ')[0]} to ${tempCustomDateRange!.end.toString().split(' ')[0]}',
-                    style: const TextStyle(
-                      color: Color(0xFF689f77),
-                      fontSize: 14,
-                    ),
+                      ElevatedButton(
+                        onPressed: () {
+                          setState(() {
+                            _selectedCategory = tempSelectedCategory;
+                            _selectedSortBy = tempSelectedSortBy;
+                            _selectedTimeFrame = tempSelectedTimeFrame;
+                            _customDateRange = tempCustomDateRange;
+                          });
+                          Navigator.pop(context);
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF689f77),
+                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                        ),
+                        child: const Text(
+                          'Apply',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
-                const SizedBox(height: 24),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    TextButton(
-                      onPressed: () {
-                        setDialogState(() {
-                          tempSelectedCategory = 0;
-                          tempSelectedSortBy = 'Most Recent';
-                          tempSelectedTimeFrame = 'All Time';
-                          tempCustomDateRange = null;
-                        });
-                      },
-                      child: const Text(
-                        'Clear All',
-                        style: TextStyle(
-                          color: Color(0xFF689f77),
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    ElevatedButton(
-                      onPressed: () {
-                        setState(() {
-                          _selectedCategory = tempSelectedCategory;
-                          _selectedSortBy = tempSelectedSortBy;
-                          _selectedTimeFrame = tempSelectedTimeFrame;
-                          _customDateRange = tempCustomDateRange;
-                        });
-                        Navigator.pop(context);
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF689f77),
-                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                      ),
-                      child: const Text(
-                        'Apply',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+              ),
             ),
           ),
         ),

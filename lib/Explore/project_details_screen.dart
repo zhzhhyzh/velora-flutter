@@ -9,6 +9,7 @@ import 'dart:convert';
 import 'package:path_provider/path_provider.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:io';
+import 'edit_project_screen.dart';
 
 class ProjectDetailsScreen extends StatefulWidget {
   final Project project;
@@ -212,30 +213,39 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      body: RefreshIndicator(
-        onRefresh: _refreshProjectData,
-        child: CustomScrollView(
-          slivers: [
-            _buildAppBar(),
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildProjectInfo(),
-                    const SizedBox(height: 24),
-                    _buildDescription(),
-                    const SizedBox(height: 24),
-                    _buildComments(),
-                  ],
+      body: Stack(
+        children: [
+          RefreshIndicator(
+            onRefresh: _refreshProjectData,
+            child: CustomScrollView(
+              slivers: [
+                _buildAppBar(),
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildProjectInfo(),
+                        const SizedBox(height: 24),
+                        _buildDescription(),
+                        const SizedBox(height: 24),
+                        _buildComments(),
+                      ],
+                    ),
+                  ),
                 ),
-              ),
+              ],
             ),
-          ],
-        ),
+          ),
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            child: _buildCommentInput(),
+          ),
+        ],
       ),
-      bottomNavigationBar: _buildCommentInput(),
     );
   }
 
@@ -256,6 +266,18 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
         ),
         ),
         actions: [
+          if (_auth.currentUser?.uid == _currentProject!.designerId)
+            IconButton(
+              icon: const Icon(Icons.edit, color: Colors.black),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => EditProjectScreen(project: _currentProject!),
+                  ),
+                ).then((_) => _refreshProjectData());
+              },
+            ),
           IconButton(
           icon: const Icon(Icons.share, color: Colors.black),
             onPressed: () async {
@@ -495,13 +517,13 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
 
   Widget _buildComments() {
     return Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Comments',
-                              style: TextStyle(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Comments',
+          style: TextStyle(
             fontWeight: FontWeight.bold,
-                                fontSize: 18,
+            fontSize: 18,
           ),
         ),
         const SizedBox(height: 16),
@@ -526,19 +548,19 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
               return const Center(
                 child: Text(
                   'No comments yet. Be the first to comment!',
-                              style: TextStyle(
+                  style: TextStyle(
                     color: Colors.grey,
                     fontSize: 16,
-                              ),
-                            ),
+                  ),
+                ),
               );
             }
 
             return ListView.builder(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
               itemCount: comments.length,
-                          itemBuilder: (context, index) {
+              itemBuilder: (context, index) {
                 final comment = comments[index];
                 final isCommentOwner = _auth.currentUser?.uid == comment.userId;
 
@@ -566,45 +588,46 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                                 color: Colors.white,
                                 fontSize: 14,
                               ),
-                                  ),
-                                  ),
+                            ),
+                      ),
                       const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Row(
-                                          children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
                                 Text(
                                   comment.userName,
                                   style: const TextStyle(
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 14,
-                                              ),
-                                            ),
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                  ),
+                                ),
                                 const Spacer(),
                                 if (isCommentOwner)
                                   IconButton(
                                     icon: const Icon(Icons.delete, size: 16),
                                     onPressed: () => _deleteComment(comment),
-                                            ),
-                                          ],
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Text(
+                                  ),
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
                               comment.text,
                               style: const TextStyle(fontSize: 14),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          },
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
             );
           },
         ),
+        const SizedBox(height: 80),
       ],
     );
   }
@@ -667,7 +690,7 @@ class FullScreenImageView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: Colors.white,
       body: Stack(
         children: [
           Center(
