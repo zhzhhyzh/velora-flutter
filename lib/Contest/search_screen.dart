@@ -12,6 +12,7 @@ import 'create_contest.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../Services/Notification/notification_service.dart';
 import '../../Services/Notification/notification_handler.dart';
+import '../Services/global_dropdown.dart';
 
 class AllContestsScreen extends StatefulWidget {
   const AllContestsScreen({super.key});
@@ -24,12 +25,6 @@ class _AllContestsScreenState extends State<AllContestsScreen> {
   String selectedTab = 'On Going';
   String _searchQuery = '';
   String? _selectedCategory;
-
-  final List<String> _categories = [
-    'Web Design', 'Mobile Design', 'Fashion Design', 'Packaging Design',
-    'Advertising Design', 'Graphic Design', 'Interior Design', 'Architecture Design',
-    'Logo Design', 'Animation Design'
-  ];
 
   List<Map<String, dynamic>> _contestMaps = [];
   bool _isLoading = true;
@@ -252,25 +247,72 @@ class _AllContestsScreenState extends State<AllContestsScreen> {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Filter by Category'),
+        backgroundColor: Colors.white,
+        title: Row(
+          children: const [
+            Icon(Icons.filter_list_rounded, color: Colors.black),
+            SizedBox(width: 8),
+            // Ensure this title accurately reflects the categories being filtered
+            Text('Filter Contest', style: TextStyle(color: Colors.black)),
+          ],
+        ),
         content: DropdownButtonFormField<String>(
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: Colors.grey.shade200,
+            hintStyle: TextStyle(color: Colors.grey.shade700, fontSize: 16),
+            border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12.0),
+                borderSide: BorderSide.none),
+            enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12.0),
+                borderSide: BorderSide.none),
+            focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12.0),
+                borderSide: BorderSide.none),
+            errorBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12.0),
+                borderSide: const BorderSide(color: Colors.red, width: 1)),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 15.0),
+          ),
           value: _selectedCategory,
-          hint: const Text('Select Category'),
-          items: _categories.map((cat) => DropdownMenuItem(value: cat, child: Text(cat))).toList(),
-          onChanged: (val) => setState(() => _selectedCategory = val),
+          // Ensure this hint accurately reflects the categories
+          hint: const Text('Select Design Category'),
+          dropdownColor: Colors.black,
+          iconEnabledColor: Colors.grey.shade700,
+          style: const TextStyle(color: Colors.black, fontSize: 16),
+          isExpanded: true,
+          items: GlobalDD.categories.map((String category) {
+            return DropdownMenuItem<String>(
+              value: category,
+              child: Text(
+                category,
+                style: const TextStyle(color: Colors.white, fontSize: 16),
+              ),
+            );
+          }).toList(),
+          onChanged: (val) {
+            setState(() {
+              _selectedCategory = val;
+            });
+          },
         ),
         actions: [
           TextButton(
             onPressed: () {
-              setState(() => _selectedCategory = null);
+              setState(() {
+                _selectedCategory = null;
+              });
               Navigator.pop(context);
             },
             child: const Text('Clear', style: TextStyle(color: Colors.red)),
           ),
           ElevatedButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () {
+              Navigator.pop(context);
+            },
             style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF689f77)),
-            child: const Text('Apply'),
+            child: const Text('Apply', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
