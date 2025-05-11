@@ -9,12 +9,14 @@ class FilteredTab extends StatefulWidget {
   final String searchQuery;
   final String? country;
   final String? state;
+  final String? designCategory;
 
   const FilteredTab({
     super.key,
     required this.searchQuery,
     required this.country,
-    required this.state
+    required this.state,
+    required this.designCategory,
   });
 
   @override
@@ -150,11 +152,12 @@ class _FilteredTabState extends State<FilteredTab> {
   Widget build(BuildContext context) {
     final filteredDesigners = _designers.where((designer) {
       final data = designer['data'] as Map<String, dynamic>;
+      final matchesdesignCat = widget.designCategory == null || widget.designCategory == data['category'];
       final matchesCountry = widget.country == null || widget.country == data['country'];
       final matchesState = widget.state == null || widget.state == data['state'];
       final matchesSearch = widget.searchQuery.isEmpty ||
           (data['name'] ?? '').toString().toLowerCase().contains(widget.searchQuery.toLowerCase());
-      return matchesCountry && matchesState && matchesSearch;
+      return matchesdesignCat &&matchesCountry && matchesState && matchesSearch;
     }).toList();
 
     if (_isLoading) {

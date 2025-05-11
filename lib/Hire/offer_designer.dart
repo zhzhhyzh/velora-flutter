@@ -92,217 +92,222 @@ class _OfferDesignerScreenState extends State<OfferDesignerScreen> {
       backgroundColor: Colors.white,
       body: Column(
         children: [
-          Row(
-              children: [
-                CircleAvatar(
-                  backgroundImage: MemoryImage(base64Decode(data['profileImg'])),
-                  radius: 50,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          data['name'] ?? 'Designer Name',
-                          style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold,height: 1.25),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        SizedBox(
-                          child: Container(
-                            padding: EdgeInsets.symmetric(vertical: 2, horizontal: 8),
-                            color: Colors.green.shade100,
-                            child: Center(
-                              child: Text(
-                                data['category'] ?? 'Designer Category',
-                                style:TextStyle(fontSize: 13,color: Colors.black, fontWeight: FontWeight.bold),
+          Padding(
+            padding: EdgeInsets.all(16),
+            child: Row(
+                children: [
+                  CircleAvatar(
+                    backgroundImage: MemoryImage(base64Decode(data['profileImg'])),
+                    radius: 50,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            data['name'] ?? 'Designer Name',
+                            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold,height: 1.25),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          SizedBox(
+                            child: Container(
+                              padding: EdgeInsets.symmetric(vertical: 2, horizontal: 8),
+                              color: Colors.green.shade100,
+                              child: Center(
+                                child: Text(
+                                  data['category'] ?? 'Designer Category',
+                                  style:TextStyle(fontSize: 13,color: Colors.black, fontWeight: FontWeight.bold),
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                        Column(
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              RichText(
+                                text: TextSpan(
+                                    style: const TextStyle(fontSize: 14),
+                                    children: [
+                                      TextSpan(
+                                        text: 'Contact No.: ',
+                                        style: TextStyle(fontWeight: FontWeight.bold,color: Colors.green),
+                                      ),
+                                      TextSpan(
+                                          text: (data['contact'] ?? '').toString().trim().isNotEmpty
+                                              ? data['contact']
+                                              : '-',
+                                          style: TextStyle(fontWeight: FontWeight.normal, color: Colors.black)
+                                      )
+                                    ]
+                                ),
+                              ),
+                              RichText(
+                                maxLines: 2,
+                                text: TextSpan(
+                                    style: const TextStyle(fontSize: 14),
+                                    children: [
+                                      TextSpan(
+                                        text: 'Email: ',
+                                        style: TextStyle(fontWeight: FontWeight.bold,color: Colors.green),
+                                      ),
+                                      TextSpan(
+                                        text: (data['email'] ?? '').toString().trim().isNotEmpty
+                                            ? data['email']
+                                            : null,
+                                        style: TextStyle(fontWeight: FontWeight.normal, color: Colors.black),
+
+                                      )
+                                    ]
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      )
+                  ),
+                ]
+            ),
+          ),
+          const Divider( thickness: 1),
+          Expanded(
+            child:
+              SingleChildScrollView(
+                padding: EdgeInsets.all(16),
+                child: Column(
+                  children: [
+                    Form(
+                      key: _formKey,
+                        child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            RichText(
-                              text: TextSpan(
-                                  style: const TextStyle(fontSize: 14),
-                                  children: [
-                                    TextSpan(
-                                      text: 'Contact No.: ',
-                                      style: TextStyle(fontWeight: FontWeight.bold,color: Colors.green),
-                                    ),
-                                    TextSpan(
-                                        text: (data['contact'] ?? '').toString().trim().isNotEmpty
-                                            ? data['contact']
-                                            : '-',
-                                        style: TextStyle(fontWeight: FontWeight.normal, color: Colors.black)
-                                    )
-                                  ]
-                              ),
+                            _textTitle(label: 'Project Description:'),
+                            _textFormField(
+                                controller: _descCtrl,
+                                hintText: 'Describe your project requirements',
+                                maxLength: 1000,
+                                multiline: true
                             ),
-                            RichText(
-                              maxLines: 2,
-                              text: TextSpan(
-                                  style: const TextStyle(fontSize: 14),
-                                  children: [
-                                    TextSpan(
-                                      text: 'Email: ',
-                                      style: TextStyle(fontWeight: FontWeight.bold,color: Colors.green),
-                                    ),
-                                    TextSpan(
-                                      text: (data['email'] ?? '').toString().trim().isNotEmpty
-                                          ? data['email']
-                                          : null,
-                                      style: TextStyle(fontWeight: FontWeight.normal, color: Colors.black),
 
-                                    )
-                                  ]
-                              ),
+                            _textTitle(label: 'Start Date (dd/mm/yyyy):'),
+                            _textFormFieldDate(
+                                valueKey: 'Start',
+                                controller: _startDateCtrl,
+                                enabled: false,
+                                fct: () {_pickStartDateDialog();},
+                                hint: 'Select Project Start Date'
+                            ),
+
+                            _textTitle(label: 'End Date (dd/mm/yyyy):'),
+                            _textFormFieldDate(
+                                valueKey: 'End',
+                                controller: _endDateCtrl,
+                                enabled: false,
+                                fct: () {_pickEndDateDialog();},
+                                hint: 'Select Project End Date'
+                            ),
+
+                            _textTitle(label: 'Offer Rate:'),
+                            _textFormField(
+                                controller: _rateCtrl,
+                                hintText: ' Enter amount',
+                                maxLength: 10,
+                                hideCounter: true,
+                                prefix: Text(_currencyFormatter.currencySymbol),
+                                keyboardType: TextInputType.number
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 10.0),
+                              child: Divider(thickness: 1),
+                            ),
+                            Text(
+                              'Recruiter Contact',
+                              style: TextStyle(fontSize: 25,fontWeight: FontWeight.bold),
+                            ),
+                            _textTitle(label: 'Name:'),
+                            _textFormField(
+                                controller: _rNameCtrl,
+                                hintText: ' Recruiter Name',
+                                maxLength: 50,
+                                hideCounter: true,
+                                keyboardType: TextInputType.text
+                            ),
+
+                            _textTitle(label: 'Phone No.:'),
+                            _textFormField(
+                                controller: _rPhoneCtrl,
+                                hintText: ' Recruiter Phone No.',
+                                maxLength: 10,
+                                hideCounter: true,
+                                keyboardType: TextInputType.number
+                            ),
+
+                            _textTitle(label: 'Email:'),
+                            _textFormField(
+                                controller: _rEmailCtrl,
+                                hintText: ' Recruiter Email',
+                                maxLength: 50,
+                                hideCounter: true,
+                                keyboardType: TextInputType.text
                             ),
                           ],
                         ),
-                      ],
-                    )
-                ),
-              ]
-          ),
-          const Divider(height: 30, thickness: 1),
-          SingleChildScrollView(
-            padding: EdgeInsets.all(16),
-            child: Column(
-              children: [
-
-                Form(
-                  key: _formKey,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _textTitle(label: 'Project Description:'),
-                        _textFormField(
-                            controller: _descCtrl,
-                            hintText: 'Describe your project requirements',
-                            maxLength: 1000,
-                            multiline: true
-                        ),
-
-                        _textTitle(label: 'Start Date (dd/mm/yyyy):'),
-                        _textFormFieldDate(
-                            valueKey: 'Start',
-                            controller: _startDateCtrl,
-                            enabled: false,
-                            fct: () {_pickStartDateDialog();},
-                            hint: 'Select Project Start Date'
-                        ),
-
-                        _textTitle(label: 'End Date (dd/mm/yyyy):'),
-                        _textFormFieldDate(
-                            valueKey: 'End',
-                            controller: _endDateCtrl,
-                            enabled: false,
-                            fct: () {_pickEndDateDialog();},
-                            hint: 'Select Project End Date'
-                        ),
-
-                        _textTitle(label: 'Offer Rate:'),
-                        _textFormField(
-                            controller: _rateCtrl,
-                            hintText: ' Enter amount',
-                            maxLength: 10,
-                            hideCounter: true,
-                            prefix: Text(_currencyFormatter.currencySymbol),
-                            keyboardType: TextInputType.number
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 10.0),
-                          child: Divider(thickness: 1),
-                        ),
-                        Text(
-                          'Recruiter Contact',
-                          style: TextStyle(fontSize: 25,fontWeight: FontWeight.bold),
-                        ),
-                        _textTitle(label: 'Name:'),
-                        _textFormField(
-                            controller: _rNameCtrl,
-                            hintText: ' Recruiter Name',
-                            maxLength: 50,
-                            hideCounter: true,
-                            keyboardType: TextInputType.text
-                        ),
-
-                        _textTitle(label: 'Phone No.:'),
-                        _textFormField(
-                            controller: _rPhoneCtrl,
-                            hintText: ' Recruiter Phone No.',
-                            maxLength: 10,
-                            hideCounter: true,
-                            keyboardType: TextInputType.number
-                        ),
-
-                        _textTitle(label: 'Email:'),
-                        _textFormField(
-                            controller: _rEmailCtrl,
-                            hintText: ' Recruiter Email',
-                            maxLength: 50,
-                            hideCounter: true,
-                            keyboardType: TextInputType.text
-                        ),
-                      ],
                     ),
-                ),
-                const SizedBox(height: 30),
-                ElevatedButton(
-                    onPressed: _isSubmitting
-                        ?  null
-                        : () {
-                      if (_formKey.currentState!.validate()) {
-                        showDialog(
-                            context: context,
-                            builder: (context) =>
-                            AlertDialog(
-                              backgroundColor: Colors.white,
-                              title: const Text("Offer Confirmation"),
-                              content:  Text(
-                                  "Are you sure you want to offer the job for ${data['name']} ?"),
-                              actions: [
-                                TextButton(
-                                  onPressed: () => Navigator.of(context).pop(),
-                                  child: const Text("Cancel", style: TextStyle(color: Colors.red),),
+                    const SizedBox(height: 30),
+                    ElevatedButton(
+                        onPressed: _isSubmitting
+                            ?  null
+                            : () {
+                          if (_formKey.currentState!.validate()) {
+                            showDialog(
+                                context: context,
+                                builder: (context) =>
+                                AlertDialog(
+                                  backgroundColor: Colors.white,
+                                  title: const Text("Offer Confirmation"),
+                                  content:  Text(
+                                      "Are you sure you want to offer the job for ${data['name']} ?"),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => Navigator.of(context).pop(),
+                                      child: const Text("Cancel", style: TextStyle(color: Colors.red),),
+                                    ),
+                                    ElevatedButton(
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: const Color(0xFF689f77),
+                                      ),
+                                      onPressed: () {
+                                        Navigator.of(context).pop();
+                                        _submitOffer();
+                                      },
+                                      child: const Text("Confirm",
+                                          style: TextStyle(color: Colors.white)),
+                                    ),
+                                  ],
                                 ),
-                                ElevatedButton(
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: const Color(0xFF689f77),
-                                  ),
-                                  onPressed: () {
-                                    Navigator.of(context).pop();
-                                    _submitOffer();
-                                  },
-                                  child: const Text("Confirm",
-                                      style: TextStyle(color: Colors.white)),
-                                ),
-                              ],
-                            ),
-                        );
-                      }
-                    },
+                            );
+                          }
+                        },
 
-                  style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF689f77),
-                      minimumSize: const Size.fromHeight(50),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(30),
+                      style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF689f77),
+                          minimumSize: const Size.fromHeight(50),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(30),
+                          ),
                       ),
-                  ),
-                  child:
-                  _isSubmitting
-                      ? const CircularProgressIndicator(color: Colors.white)
-                      : const Text(
-                    'SUBMIT',
-                    style: TextStyle(fontSize: 18, color: Colors.white),
-                  ),
-                )
-              ],
-            ),
+                      child:
+                      _isSubmitting
+                          ? const CircularProgressIndicator(color: Colors.white)
+                          : const Text(
+                        'SUBMIT',
+                        style: TextStyle(fontSize: 18, color: Colors.white),
+                      ),
+                    )
+                  ],
+                ),
+              ),
           ),
         ],
       ),
