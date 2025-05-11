@@ -48,6 +48,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
 
   final List<String> _timeFrames = [
     'All Time',
+    'Today',
     'This Week',
     'This Month',
     'This Year',
@@ -100,6 +101,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
           ),
           child: Padding(
             padding: const EdgeInsets.all(16),
+            child: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -223,6 +225,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
                   ),
                 ),
               ],
+              ),
             ),
           ),
         ),
@@ -378,11 +381,15 @@ class _ExploreScreenState extends State<ExploreScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            'Active Filters: ${_selectedSortBy}${_selectedTimeFrame != 'All Time' ? ', $_selectedTimeFrame' : ''}',
-            style: const TextStyle(
-              fontSize: 14,
-              color: Colors.grey,
+          Expanded(
+            child: Text(
+              'Active Filters: ${_selectedSortBy}${_selectedTimeFrame != 'All Time' ? ', $_selectedTimeFrame' : ''}',
+              style: const TextStyle(
+                fontSize: 14,
+                color: Colors.grey,
+              ),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
             ),
           ),
           TextButton.icon(

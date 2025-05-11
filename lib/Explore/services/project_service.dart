@@ -39,13 +39,22 @@ class ProjectService {
     // Apply time frame filter
     if (timeFrame != null) {
       DateTime startDate;
-      if (customDateRange != null) {
-        startDate = customDateRange.start;
+      if (timeFrame == 'Custom Range' && customDateRange != null) {
+        startDate = customDateRange.start.toUtc();
+        final endDate = DateTime(
+          customDateRange.end.year,
+          customDateRange.end.month,
+          customDateRange.end.day,
+          23, 59, 59, 999
+        ).toUtc();
         query = query.where('createdAt', isGreaterThanOrEqualTo: Timestamp.fromDate(startDate))
-                    .where('createdAt', isLessThanOrEqualTo: Timestamp.fromDate(customDateRange.end));
+                    .where('createdAt', isLessThanOrEqualTo: Timestamp.fromDate(endDate));
       } else {
         DateTime now = DateTime.now();
         switch (timeFrame) {
+          case 'Today':
+            startDate = DateTime(now.year, now.month, now.day);
+            break;
           case 'This Week':
             startDate = now.subtract(Duration(days: now.weekday - 1));
             break;
@@ -442,6 +451,45 @@ class ProjectService {
     }
   }
 
+  Future<void> updateProject({
+    required String projectId,
+    required String title,
+    required String description,
+    required String category,
+    required String imageUrl,
+  }) async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) throw 'User not logged in';
+
+      // Get the project document
+      final projectRef = _firestore.collection(_projectsCollection).doc(projectId);
+      final projectDoc = await projectRef.get();
+
+      if (!projectDoc.exists) {
+        throw 'Project not found';
+      }
+
+      // Verify that the current user is the project owner
+      final projectData = projectDoc.data();
+      if (projectData == null || projectData['designerId'] != user.uid) {
+        throw 'You do not have permission to edit this project';
+      }
+
+      // Update the project
+      await projectRef.update({
+        'title': title,
+        'description': description,
+        'category': category,
+        'imageUrl': imageUrl,
+        'title_lower': title.toLowerCase(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      throw 'Failed to update project: $e';
+    }
+  }
+
   Stream<List<Project>> getTrendingProjects() {
     final threeDaysAgo = DateTime.now().subtract(const Duration(days: 3));
     
@@ -546,5 +594,52 @@ class ProjectService {
   Future<int> getFollowerCount(String userId) async {
     final doc = await _firestore.collection('users').doc(userId).get();
     return doc.data()?['followers'] ?? 0;
+  }
+
+  // Delete a project
+  Future<void> deleteProject(String projectId) async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) throw 'User not logged in';
+
+      // Get the project document
+      final projectRef = _firestore.collection(_projectsCollection).doc(projectId);
+      final projectDoc = await projectRef.get();
+
+      if (!projectDoc.exists) {
+        throw 'Project not found';
+      }
+
+      // Verify that the current user is the project owner
+      final projectData = projectDoc.data();
+      if (projectData == null || projectData['designerId'] != user.uid) {
+        throw 'You do not have permission to delete this project';
+      }
+
+      // Delete all comments associated with the project
+      final commentsQuery = await _firestore
+          .collection('comments')
+          .where('projectId', isEqualTo: projectId)
+          .get();
+      
+      for (var doc in commentsQuery.docs) {
+        await doc.reference.delete();
+      }
+
+      // Delete all likes associated with the project
+      final likesQuery = await _firestore
+          .collection('userLikes')
+          .where('projectId', isEqualTo: projectId)
+          .get();
+      
+      for (var doc in likesQuery.docs) {
+        await doc.reference.delete();
+      }
+
+      // Delete the project
+      await projectRef.delete();
+    } catch (e) {
+      throw 'Failed to delete project: $e';
+    }
   }
 } 

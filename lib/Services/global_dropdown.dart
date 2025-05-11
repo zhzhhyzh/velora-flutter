@@ -25,8 +25,14 @@ class GlobalDD{
   ];
  static final List<String> countries = ['Malaysia', 'United States', 'India'];
 
+  static final List<String> designCategories = const [
+    'Web Design', 'Mobile Design', 'Fashion Design', 'Packaging Design',
+    'Advertising Design', 'Graphic Design', 'Interior Design', 'Architecture Design',
+    'Logo Design', 'Animation Design'
+  ];
+
  static final Map<String, List<String>> states = {
-    'Malaysia': ['Selangor', 'Penang', 'Johor', 'Sarawak'],
+    'Malaysia': ['Selangor', 'Penang', 'Johor', 'Sarawak', 'Greater Kuala Lumpur','Putrajaya','Perak','Negeri Sembilan','Pahang','Kedah','Perlis','Kelantan','Terengganu','Sabah','Labuan','Melaka'],
     'United States': ['California', 'Texas', 'New York', 'Florida'],
     'India': ['Maharashtra', 'Karnataka', 'Delhi', 'Tamil Nadu'],
   };
