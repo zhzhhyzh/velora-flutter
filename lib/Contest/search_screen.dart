@@ -276,13 +276,12 @@ class _AllContestsScreenState extends State<AllContestsScreen> {
             contentPadding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 15.0),
           ),
           value: _selectedCategory,
-          // Ensure this hint accurately reflects the categories
           hint: const Text('Select Design Category'),
           dropdownColor: Colors.black,
           iconEnabledColor: Colors.grey.shade700,
           style: const TextStyle(color: Colors.black, fontSize: 16),
           isExpanded: true,
-          items: GlobalDD.categories.map((String category) {
+          items: GlobalDD.designCategories.map((String category) {
             return DropdownMenuItem<String>(
               value: category,
               child: Text(
