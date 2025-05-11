@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:velora2/Hire/edit_desinger_form.dart';
 import '../Services/global_dropdown.dart';
@@ -23,6 +25,7 @@ class _AllHiresScreenState extends State<AllHiresScreen> {
 
   String? countryFilter;
   String? stateFilter;
+  String? designCatFilter;
   int _selectedTabIndex = 0;
   final tabs = ['All Designer', ...GlobalDD.designCategoryList ]; //... make tabs a List<String> instead of List<Object>
   @override
@@ -47,10 +50,7 @@ class _AllHiresScreenState extends State<AllHiresScreen> {
                       style: TextStyle(fontSize: 20,fontWeight: FontWeight.bold)
                     ),
                     ElevatedButton(
-                      onPressed: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => RegisterOrEditDesigner())
-                      ),
+                        onPressed: () => checkAndNavigateToDesignerForm(context),
                       style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF689f77),
                           padding: const EdgeInsets.symmetric(
@@ -77,6 +77,22 @@ class _AllHiresScreenState extends State<AllHiresScreen> {
             ],
           )
         )
+    );
+  }
+
+  Future<void> checkAndNavigateToDesignerForm(BuildContext context) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    final designersRef = FirebaseFirestore.instance.collection('designers');
+    final query = await designersRef.where('email', isEqualTo: user.email).limit(1).get();
+    final designerDoc = query.docs.isNotEmpty ? query.docs.first : null;
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => RegisterOrEditDesigner(designerData: designerDoc),
+      ),
     );
   }
 
@@ -138,6 +154,7 @@ class _AllHiresScreenState extends State<AllHiresScreen> {
               onSelected: (selected) {
                   setState(() {
                     _selectedTabIndex = index;
+                    designCatFilter = index == 0 ? null : tabs[index];
                   });
               },
               showCheckmark: false,
@@ -162,7 +179,8 @@ class _AllHiresScreenState extends State<AllHiresScreen> {
       return FilteredTab(
         searchQuery: _searchQuery,
         country : countryFilter,
-        state : stateFilter
+        state : stateFilter,
+        designCategory: designCatFilter,
       );
     } else {
       return const Center(child: Text('Invalid tab selected'));
@@ -175,129 +193,98 @@ class _AllHiresScreenState extends State<AllHiresScreen> {
     showDialog(
       context: context,
       builder: (context) {
-        return AlertDialog(
-          backgroundColor: Colors.white,
-          title: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: const [
-                  Icon(Icons.filter_list_rounded, color: Colors.black),
-                  SizedBox(width: 10),
-                  Text('Filter Designers',style: TextStyle(color: Colors.black, fontSize: 16))
+        String? tempCountry = countryFilter;
+        String? tempState = stateFilter;
+
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+            return AlertDialog(
+              backgroundColor: Colors.white,
+              title: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: const [
+                      Icon(Icons.filter_list_rounded, color: Colors.black),
+                      SizedBox(width: 10),
+                      Text('Filter Designers', style: TextStyle(color: Colors.black, fontSize: 16))
+                    ],
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close, color: Colors.black),
+                    onPressed: () => Navigator.pop(context),
+                  )
                 ],
               ),
-              SizedBox(width: 20),
-              IconButton(
-                icon: const Icon(Icons.close, color: Colors.black),
-                onPressed: () => Navigator.pop(context),
-              )
-            ],
-          ),
-          content: SingleChildScrollView(
-            child: Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  child: DropdownButtonFormField<String>(
-                    isExpanded: true,
-                    value: countryFilter,
-                    hint: Text("Select Country", style: TextStyle(color: Color(0xFFD9D9D9))),
-                    decoration: _dropdownDecoration(),
-                    dropdownColor: Colors.black87,
-                    iconEnabledColor: Colors.white,
-                    style: const TextStyle(color: Colors.white),
-                    items: GlobalDD.countries.map(
-                            (item) => DropdownMenuItem(value: item, child: Text(item))
-                    ).toList(),
-                    onChanged: (val) => setState(() {
-                      countryFilter = val!;
-                      stateFilter = null;
-                    }),
-                  ),
-                ),
-                countryFilter == ''
-                    ? GestureDetector(
-                  onTap: () {
-                    GlobalMethod.showErrorDialog(
-                      error: "Please select country first",
-                      ctx: context,
-                    );
-                  },
-                  child: InputDecorator(
-                    decoration: _dropdownDecoration(),
-                    child: Text(
-                      "Select State",
-                      style: TextStyle(color: Color(0xFFD9D9D9)),
+              content: SingleChildScrollView(
+                child: Column(
+                  children: [
+                    DropdownButtonFormField<String>(
+                      isExpanded: true,
+                      value: tempCountry,
+                      hint: const Text("Select Country", style: TextStyle(color: Color(0xFFD9D9D9))),
+                      decoration: _dropdownDecoration(),
+                      dropdownColor: Colors.black87,
+                      iconEnabledColor: Colors.white,
+                      style: const TextStyle(color: Colors.white),
+                      items: GlobalDD.countries.map(
+                            (item) => DropdownMenuItem(value: item, child: Text(item)),
+                      ).toList(),
+                      onChanged: (val) {
+                        setStateDialog(() {
+                          tempCountry = val;
+                          tempState = null; // Reset state when country changes
+                        });
+                      },
                     ),
-                  ),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<String>(
+                      isExpanded: true,
+                      value: tempState,
+                      hint: const Text("Select State", style: TextStyle(color: Color(0xFFD9D9D9))),
+                      decoration: _dropdownDecoration(),
+                      dropdownColor: Colors.black87,
+                      iconEnabledColor: Colors.white,
+                      style: const TextStyle(color: Colors.white),
+                      items: (GlobalDD.states[tempCountry] ?? [])
+                          .map((item) => DropdownMenuItem(value: item, child: Text(item)))
+                          .toList(),
+                      onChanged: (val) => setStateDialog(() => tempState = val),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    setState(() {
+                      countryFilter = null;
+                      stateFilter = null;
+                    });
+                  },
+                  child: const Text('Clear', style: TextStyle(color: Colors.red)),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    setState(() {
+                      countryFilter = tempCountry;
+                      stateFilter = tempState;
+                    });
+                  },
+                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF689f77)),
+                  child: const Text('Apply', style: TextStyle(color: Colors.white)),
                 )
-                    : DropdownButtonFormField<String>(
-                  isExpanded: true,
-                  value: stateFilter,
-                  hint: Text("Select State", style: TextStyle(color: Color(0xFFD9D9D9))),
-                  decoration: _dropdownDecoration(),
-                  dropdownColor: Colors.black87,
-                  iconEnabledColor: Colors.white,
-                  style: const TextStyle(color: Colors.white),
-                  items: (GlobalDD.states[countryFilter] ?? [])
-                      .map((item) => DropdownMenuItem(value: item, child: Text(item)))
-                      .toList(),
-                  onChanged: (val) => setState(() => stateFilter = val),
-                ),
               ],
-            )
-          ),
-          actions: [
-            TextButton(
-              onPressed: (){
-                setState(() {
-                  countryFilter = null;
-                  stateFilter = null;
-                });
-              },
-              child: Text('Clear', style: TextStyle(color: Colors.red))
-            ),
-            ElevatedButton(
-              onPressed: (){
-                Navigator.pop(context);
-                setState(() {});
-              },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF689f77),
-                ),
-              child: const Text('Apply', style: TextStyle(color: Colors.white))
-            )
-          ],
+            );
+          },
         );
-      }
+      },
     );
   }
 
-  Widget _buildDropdown({
-    required String label,
-    required String? value,
-    required List<String> items,
-    required void Function(String?) onChanged,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: DropdownButtonFormField<String>(
-        isExpanded: true,
-        value: items.contains(value) ? value : null,
-        hint: Text("Select $label", style: TextStyle(color: Color(0xFFD9D9D9))),
-        decoration: _dropdownDecoration(),
-        dropdownColor: Colors.black87,
-        iconEnabledColor: Colors.white,
-        style: const TextStyle(color: Colors.white),
-        items:
-        items
-            .map((item) => DropdownMenuItem(value: item, child: Text(item)))
-            .toList(),
-        onChanged: onChanged,
-      ),
-    );
-  }
+
 
   InputDecoration _dropdownDecoration() {
     return InputDecoration(
