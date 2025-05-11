@@ -44,7 +44,7 @@ class _AllContestsScreenState extends State<AllContestsScreen> {
   }
 
   Future<void> _checkContestWinnerNotification() async {
-    debugPrint('🔥 _checkContestWinnerNotification() invoked');
+    debugPrint('_checkContestWinnerNotification() invoked');
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
@@ -65,7 +65,7 @@ class _AllContestsScreenState extends State<AllContestsScreen> {
       // Skip if already notified
       if (notified == true) continue;
 
-      debugPrint('🎯 Checking contest: $contestTitle');
+      debugPrint('Checking contest: $contestTitle');
 
       // Fetch entries for this contest
       final entriesSnapshot = await contestDoc.reference.collection('entries').get();
@@ -84,7 +84,7 @@ class _AllContestsScreenState extends State<AllContestsScreen> {
       }
 
       if (voteCounts.isEmpty) {
-        debugPrint('⚠️ No entries or votes for contest: $contestTitle');
+        debugPrint('No entries or votes for contest: $contestTitle');
         continue;
       }
 
@@ -92,48 +92,42 @@ class _AllContestsScreenState extends State<AllContestsScreen> {
       final winningEntryId = voteCounts.entries.reduce((a, b) => a.value >= b.value ? a : b).key;
       final winnerEmail = entryOwners[winningEntryId] ?? '';
 
-      debugPrint('🏆 Winning entry: $winningEntryId with $winnerEmail');
+      debugPrint('Winning entry: $winningEntryId with $winnerEmail');
 
-      // Update winnerEmail to contest
+      // Update contest with the winner's email and mark the contest as notified
       await contestDoc.reference.update({
         'winnerEmail': winnerEmail,
         'winnerNotified': true,
       });
 
-      // Notify winner
-      if (userEmail == winnerEmail) {
-        if (context.mounted) {
-          await showDialog(
-            context: context,
-            builder: (_) => AlertDialog(
-              title: const Text("Congratulations!"),
-              content: Text("You won the contest: $contestTitle"),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: const Text("OK"),
-                ),
-              ],
-            ),
+      // Send notification to the winner
+      await notificationHandler.sendNotification(
+        theEmail: winnerEmail,
+        title: "You Won!",
+        message: "You are the winner of the '$contestTitle' contest!",
+      );
+
+      // Send notification to the contest creator (admin or the user who initiated the contest)
+      await notificationHandler.sendNotification(
+        theEmail: userEmail!,
+        title: "Contest Ended",
+        message: "The contest '$contestTitle' has ended. A winner was chosen.",
+      );
+
+      // Now, send notifications to participants who didn't win
+      for (final entryDoc in entriesSnapshot.docs) {
+        final entryData = entryDoc.data();
+        final entryEmail = entryData['createdBy'] ?? ''; // Assuming 'createdBy' field is the participant's email
+
+        if (entryEmail != winnerEmail && entryEmail.isNotEmpty) {
+          debugPrint('Sending non-winner notification to: $entryEmail');
+
+          await notificationHandler.sendNotification(
+            theEmail: entryEmail,
+            title: "Contest Ended",
+            message: "The contest '$contestTitle' has ended. Unfortunately, you did not win this time, but thank you for participating!",
           );
         }
-
-        await NotificationService.showNotification(
-          title: "You won a contest!",
-          body: "Congrats! You are the winner of $contestTitle",
-        );
-
-        await notificationHandler.sendNotification(
-          theEmail: userEmail!,
-          title: "You Won!",
-          message: "You are the winner of the '$contestTitle' contest!",
-        );
-      } else if (contestData['createdBy'] == userEmail) {
-        await notificationHandler.sendNotification(
-          theEmail: userEmail!,
-          title: "Contest Ended",
-          message: "The contest '$contestTitle' has ended. A winner was chosen.",
-        );
       }
     }
   }
