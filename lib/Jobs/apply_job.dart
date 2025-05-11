@@ -203,7 +203,7 @@ Email: ${_emailController.text}
         );
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to send notification: $e')),
+          SnackBar(content: Text('Failed to send notifications: $e')),
         );
       }
 
