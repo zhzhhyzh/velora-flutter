@@ -190,70 +190,76 @@ import 'package:velora2/Hire/offer_designer.dart';
             ),
             const Divider(thickness: 1),
             Padding(
-              padding: EdgeInsets.only(left: 20,right: 20, top: 5,bottom: 15),
+              padding: EdgeInsets.only(left: 20, right: 20, top: 5, bottom: 15),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.start, // Helps with multi-line text
                 children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      RichText(
-                        text: TextSpan(
+                  // Contact & Email Info - Take available space
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        RichText(
+                          text: TextSpan(
                             style: const TextStyle(fontSize: 14),
                             children: [
                               TextSpan(
                                 text: 'Contact No.: ',
-                                style: TextStyle(fontWeight: FontWeight.bold,color: Colors.green),
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.green,
+                                ),
                               ),
                               TextSpan(
-                                  text: (data['contact'] ?? '').toString().trim().isNotEmpty
-                                      ? data['contact']
-                                      : null,
-                                  style: TextStyle(fontWeight: FontWeight.normal, color: Colors.black)
-                              )
-                            ]
+                                text: (data['contact'] ?? '').toString().trim().isNotEmpty
+                                    ? data['contact']
+                                    : '',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.normal,
+                                  color: Colors.black,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                      RichText(
-                        maxLines: 2,
-                        text: TextSpan(
+                        SizedBox(height: 4),
+                        RichText(
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          text: TextSpan(
                             style: const TextStyle(fontSize: 14),
                             children: [
                               TextSpan(
                                 text: 'Email: ',
-                                style: TextStyle(fontWeight: FontWeight.bold,color: Colors.green),
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.green,
+                                ),
                               ),
                               TextSpan(
-                                  text: (data['email'] ?? '').toString().trim().isNotEmpty
-                                      ? data['email']
-                                      : null,
-                                  style: TextStyle(fontWeight: FontWeight.normal, color: Colors.black),
-
-                              )
-                            ]
+                                text: (data['email'] ?? '').toString().trim().isNotEmpty
+                                    ? data['email']
+                                    : '',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.normal,
+                                  color: Colors.black,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                  isOwner
-                      ? MaterialButton(
-                      onPressed: () => checkAndNavigateToDesignerForm(context),
-                      color: const Color(0xff689f77),
-                      elevation: 8,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-                      child: Padding(
-                        padding: EdgeInsets.all(10),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            Icon(Icons.edit, color: Colors.white),
-                            Text('Edit', style: TextStyle(color: Colors.white, fontSize: 25))
-                          ],
-                        ),
-                      )
-                  )
-                      :MaterialButton(
-                      onPressed: () => Navigator.push(
+
+                  SizedBox(width: 10),
+
+                  // Button - Sized to fit
+                  IntrinsicWidth(
+                    child: MaterialButton(
+                      onPressed: isOwner
+                          ? () => checkAndNavigateToDesignerForm(context)
+                          : () => Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (_) => OfferDesignerScreen(designer: widget.designer),
@@ -261,20 +267,29 @@ import 'package:velora2/Hire/offer_designer.dart';
                       ),
                       color: const Color(0xff689f77),
                       elevation: 8,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(18),
+                      ),
                       child: Padding(
-                        padding: EdgeInsets.all(10),
+                        padding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                         child: Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
                           children: [
-                            Icon(Icons.work, color: Colors.white),
-                            Text('Hire', style: TextStyle(color: Colors.white, fontSize: 25))
+                            Icon(
+                              isOwner ? Icons.edit : Icons.work,
+                              color: Colors.white,
+                            ),
+                            SizedBox(width: 5),
+                            Text(
+                              isOwner ? 'Edit' : 'Hire',
+                              style: TextStyle(color: Colors.white, fontSize: 20),
+                            ),
                           ],
                         ),
-                      )
-                  )
-                ]
-              )
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             )
           ],
         ),
