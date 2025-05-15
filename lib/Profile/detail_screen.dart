@@ -32,7 +32,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final _positionCtrl = TextEditingController();
   final _phoneCtrl = TextEditingController();
   final _emailCtrl = TextEditingController();
-  final _passwordCtrl = TextEditingController(); // optional if you want
+  // final _passwordCtrl = TextEditingController(); // optional if you want
   List<UserModel> _users = [];
   bool _isLoading = true;
 
@@ -110,7 +110,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-
+  //
+  // Future<void> _reauthenticateUser(String email, String password) async {
+  //   final cred = EmailAuthProvider.credential(email: email, password: password);
+  //   await _auth.currentUser?.reauthenticateWithCredential(cred);
+  // }
 
   Widget _textTitles({required String label}) {
     return  Text(
@@ -181,7 +185,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
       final oldEmail = user.email;
       await user.verifyBeforeUpdateEmail(_emailCtrl.text.trim());
-
+      // await _reauthenticateUser(oldEmail!, newPassword);
       String? base64Image;
       if (imageFile != null) {
         final bytes = await imageFile!.readAsBytes();
@@ -198,19 +202,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
 
       final designersRef = _firestore.collection('designers');
-      final existingDesignerQuery = await designersRef
-          .where('email', isEqualTo: oldEmail)
+      final designerQuery = await designersRef
+          .where('email', isEqualTo: user.email)
           .limit(1)
           .get();
 
-      if (existingDesignerQuery.docs.isNotEmpty) {
-        final String designerId = existingDesignerQuery.docs.first.id;
-        final DocumentReference designerDocRef = designersRef.doc(designerId);
-        await designerDocRef.update({'email' : _emailCtrl.text.trim()});
+      if (designerQuery.docs.isNotEmpty) {
+        final designerDocRef = designerQuery.docs.first.reference;
+
+        await designerDocRef.update({
+          'name': _usernameCtrl.text.trim(),
+          'email': _emailCtrl.text.trim(),
+          'contact': _phoneCtrl.text.trim(),
+          'state': 'Selangor', // optional, example static
+          'desc': 'Updated from profile', // optional
+        });
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Designer document not found')),
+        );
       }
-      else {ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('ERRRRRRRRRRR')),
-      );}
 
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -312,7 +323,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _positionCtrl.dispose();
     _phoneCtrl.dispose();
     _emailCtrl.dispose();
-    _passwordCtrl.dispose();
+    // _passwordCtrl.dispose();
     super.dispose();
   }
 
@@ -383,20 +394,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   _textFormField(
                     valueKey: "email",
                     controller: _emailCtrl,
-                    enabled: true,
+                    enabled: false,
                     fct: () {},
                     maxLength: 100,
                     hint: "Enter Email",
                   ),
-                  _textTitles(label: "Password"),
-                  _textFormField(
-                    valueKey: "password",
-                    controller: _passwordCtrl,
-                    enabled: true,
-                    fct: () {},
-                    maxLength: 100,
-                    hint: "Enter Password",
-                  ),
+                  // _textTitles(label: "Password"),
+                  // _textFormField(
+                  //   valueKey: "password",
+                  //   controller: _passwordCtrl,
+                  //   enabled: true,
+                  //   fct: () {},
+                  //   maxLength: 100,
+                  //   hint: "Enter Password",
+                  // ),
                   _textTitles(label: "Position"),
                   DropdownButtonFormField<String>(
                     value: _positionCtrl.text.isNotEmpty ? _positionCtrl.text : null,
@@ -424,7 +435,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                 ],
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 20,),
               ElevatedButton(
                 onPressed: () async {
                   final confirm = await showDialog<bool>(
