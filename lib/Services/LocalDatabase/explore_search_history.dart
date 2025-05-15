@@ -18,16 +18,71 @@ class ExploreSearchHistory {
   }
 
   Future<Database> _initDatabase() async {
-    String path = join(await getDatabasesPath(), 'explore_search_history.db');
+    String path = join(await getDatabasesPath(), 'veloras.db');
     return await openDatabase(
       path,
       version: 1,
       onCreate: (Database db, int version) async {
         await db.execute('''
+          CREATE TABLE users (
+            id TEXT PRIMARY KEY,
+            name TEXT,
+            email TEXT,
+            phoneNumber TEXT,
+            position TEXT,
+            userImage TEXT
+          )
+        ''');
+
+        await db.execute('''
+          CREATE TABLE jobs (
+            id TEXT PRIMARY KEY,
+            jobTitle TEXT,
+            comName TEXT,
+            jobLocation TEXT,
+            jobCat TEXT,
+            jobImage TEXT,
+            deadline TEXT
+          )
+        ''');
+
+        await db.execute('''
           CREATE TABLE search_history(
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             query TEXT NOT NULL,
             timestamp INTEGER NOT NULL
+          )
+        ''');
+
+        await db.execute(''' 
+          CREATE TABLE designers (
+            id TEXT PRIMARY KEY,
+            name TEXT,
+            category TEXT,
+            contact TEXT,
+            country TEXT,
+            desc TEXT,
+            designerId TEXT,
+            email TEXT,
+            profileImg TEXT,
+            rate TEXT,
+            slogan TEXT,
+            state TEXT
+          )
+        ''');
+
+        await db.execute('''
+          CREATE TABLE contests (
+            id TEXT PRIMARY KEY,
+            title TEXT,
+            description TEXT,
+            category TEXT,
+            startDate TEXT,
+            endDate TEXT,
+            coverImagePath TEXT,
+            createdBy TEXT,
+            createdAt TEXT,
+            isActive INTEGER
           )
         ''');
       },

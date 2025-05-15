@@ -14,12 +14,60 @@ class LocalDatabase {
 
   static Future<Database> _initDatabase() async {
     final dbPath = await getDatabasesPath();
-    final path = join(dbPath, 'contests.db');
+    final path = join(dbPath, 'veloras.db');
 
     return await openDatabase(
       path,
       version: 1,
       onCreate: (db, version) async {
+        await db.execute('''
+          CREATE TABLE users (
+            id TEXT PRIMARY KEY,
+            name TEXT,
+            email TEXT,
+            phoneNumber TEXT,
+            position TEXT,
+            userImage TEXT
+          )
+        ''');
+
+        await db.execute('''
+          CREATE TABLE jobs (
+            id TEXT PRIMARY KEY,
+            jobTitle TEXT,
+            comName TEXT,
+            jobLocation TEXT,
+            jobCat TEXT,
+            jobImage TEXT,
+            deadline TEXT
+          )
+        ''');
+
+        await db.execute('''
+          CREATE TABLE search_history(
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            query TEXT NOT NULL,
+            timestamp INTEGER NOT NULL
+          )
+        ''');
+
+        await db.execute(''' 
+          CREATE TABLE designers (
+            id TEXT PRIMARY KEY,
+            name TEXT,
+            category TEXT,
+            contact TEXT,
+            country TEXT,
+            desc TEXT,
+            designerId TEXT,
+            email TEXT,
+            profileImg TEXT,
+            rate TEXT,
+            slogan TEXT,
+            state TEXT
+          )
+        ''');
+
         await db.execute('''
           CREATE TABLE contests (
             id TEXT PRIMARY KEY,
