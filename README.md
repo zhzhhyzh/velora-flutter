@@ -1,6 +1,6 @@
 # 🚀 Velora
 
-A **Flutter mobile application project** developed for **TAR UMT - Mobile Application Development** coursework.
+A **Flutter mobile application project** developed for **TARUMT Mobile Application Development** coursework.
 
 ---
 
@@ -44,3 +44,4 @@ Here are some helpful resources to learn Flutter and explore sample projects:
 - You can verify your setup using:
   ```bash
   flutter doctor
+
