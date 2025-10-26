@@ -1,12 +1,14 @@
 # 🚀 Velora
 
-A **Flutter mobile application project** developed for **TARUMT Mobile Application Development** coursework.
+A **job-finding mobile application** built using **Flutter**, developed for **TARUMT Mobile Application Development** coursework.
 
 ---
 
 ## 🧭 Overview
-Velora2 is a starting point for a Flutter application.  
-It includes all the necessary setup to kickstart your Flutter development journey, following best practices and structured project organization.
+**Velora** aims to simplify the process of job searching and recruitment.  
+Users can explore available job listings, view job details, and connect with potential employers — all within a clean and modern Flutter-based interface.  
+
+This project serves as both a practical learning experience and a foundation for more advanced Flutter applications.
 
 ---
 
@@ -44,4 +46,5 @@ Here are some helpful resources to learn Flutter and explore sample projects:
 - You can verify your setup using:
   ```bash
   flutter doctor
+
 
